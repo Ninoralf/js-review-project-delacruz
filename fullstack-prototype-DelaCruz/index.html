@@ -13,7 +13,7 @@
 
         <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
             <div class="container-fluid">
-                <a class="navbar-brand" href="#">Full-Stack App Ninoralf Dela Cruz</a>
+                <a class="navbar-brand" href="index.html">Full-Stack App Ninoralf Dela Cruz</a>
 
                 <button
                     class="navbar-toggler"
@@ -29,7 +29,7 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto flex-column">
                         <li class="nav-item">
-                        <a class="nav-link  " href="#">Login</a>
+                        <a class="nav-link  " href="#" id="loginLink">Login</a>
                         </li>
                         <li class="nav-item">
                         <a class="nav-link" href="#" id="registerLink">Register</a>
@@ -40,36 +40,109 @@
             </div>
         </nav>
 
-        <div id="registerSection" class="register-wrapper" style="display: none;">
-            <div class="register-container">
-                <h2>Register</h2>
+        <div id = "welcomeSection" class="container welcome-container">
+            <div class="welcome-card">
+
+                <h4 class="welcome-title">Welcome to Full-Stack App</h4>
+                <p class="welcome-subtitle">
+                    A static prototype before backend integration. Simulates:
+                </p>
+
+                <ul>
+                    <li>Email registration + fake verification</li>
+                    <li>Login with JWT-like token simulation</li>
+                    <li>Role-based UI (Admin/User)</li>
+                    <li>CRUD for Employees, Departments, Requests</li>
+                </ul>
+
+                <div class="note-box mt-3">
+                    ⚠ <strong>Note:</strong> All data is stored in <code>localStorage</code>. 
+                    Refresh to reset.
+                </div>
+
+                <div class="mt-4">
+                    <button class="btn btn-primary">
+                        Get Started →
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id = "registerSection" class="container register-container">
+            <div class="register-card">
+                <h4 class="register-title">Register Account</h4>
 
                 <form>
-                    <div class="form-row">
-                    <label>First Name</label>
-                    <br>
-                    <input type="text" name="firstname" required>
+                    <div class="mb-3">
+                        <label class="form-label">First Name</label>
+                        <input type="text" class="form-control" placeholder="">
                     </div>
 
-                    <div class="form-row">
-                    <label>Last Name</label>
-                    <input type="text" name="lastname" required>
+                    <div class="mb-3">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" class="form-control" placeholder="">
                     </div>
 
-                    <div class="form-row">
-                    <label>Email</label>
-                    <input type="email" name="email" required>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="emailInput" class="form-control" placeholder="">
                     </div>
 
-                    <div class="form-row">
-                    <label>Password</label>
-                    <input type="password" name="password" required>
+                    <div class="mb-4">
+                        <label class="form-label">Password</label>
+                        <input type="password" class="form-control" placeholder="">
                     </div>
 
-                    <div class="buttons">
-                    <button type="submit">Signed Up</button>
-                    <button type="reset">Cancel</button>
+                    <button type="button" id="signUpbtn" class="btn btn-success me-2">Sign Up</button>
+                    <button type="button" class="btn btn-cancel">Cancel</button>
+                </form>
+            </div>
+        </div>
+
+        <div id = "verifyEmail" class="container verify-container">
+            <div class="verify-card">
+
+                <h4 class="verify-title">Verify Your Email</h4>
+
+                <div class="custom-success mb-3">
+                    ✔ A verification link has been sent to <strong id="emailOut">your email address</strong>.
+                </div>
+
+                <p>For demo purposes, click below to simulate verification:</p>
+
+                <div class="mt-3">
+                    <button class="btn btn-success me-2">
+                        ✔ Simulate Email Verification
+                    </button>
+
+                    <button type="button" id="goToLogin" class="btn btn-outline-secondary">
+                        Go to Login
+                    </button>
+                </div>
+
+            </div>
+        </div>
+
+        <div id = "loginSection" class="container login-container">
+            <div class="login-card">
+
+                <h4 class="register-title">Login</h4>
+
+                <form>
+                    <div class="mb-4">
+                        <label class="form-label">Email</label>
+                        <input type="text" class="form-control" placeholder="">
                     </div>
+
+                    <div class="mb-4">
+                        <label class="form-label">Password</label>
+                        <input type="text" class="form-control" placeholder="">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary me-2">Login</button>
+                    <button type="button" class="btn btn-cancel">Cancel</button>
+
                 </form>
             </div>
         </div>
