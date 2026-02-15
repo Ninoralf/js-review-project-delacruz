@@ -1,11 +1,35 @@
 /* All nav bar css */
-.navbar-brand{
-    font-size: large;
+.container {
+    max-width: 600px;
+    margin: 60px auto;
 }
 
-.welcome-container {
-    max-width: 750px;
-    margin: 60px auto;
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
+}
+
+body.not-authenticated .role-logged-out {
+    display: block;
+}
+
+body.authenticated .role-logged-out {
+    display: none;
+}
+
+body.authenticated .role-logged-in {
+    display: block;
+}
+
+body.not-authenticated .role-logged-in {
+    display: none;
+}
+
+.navbar-brand{
+    font-size: large;
 }
 
 .welcome-card {
@@ -41,15 +65,6 @@
 }
 
 /* This is the css for registration Form */
-#registerSection {
-    display: none;
-}
-
-.register-container {
-    max-width: 600px;
-    margin: 60px auto;
-}
-
 .register-card {
     background: #ffffff;
     padding: 30px;
@@ -88,15 +103,6 @@
 }
 
 /* Verify email Css */
-#verifyEmail {
-    display: none;
-}
-
-.verify-container {
-    max-width: 750px;
-    margin: 60px auto;
-}
-
 .verify-card {
     background: #ffffff;
     padding: 30px;
@@ -118,6 +124,19 @@
     font-size: 0.95rem;
 }
 
+.custom-failed {
+    background-color: #edd4d4;
+    border: 1px solid #e6c3c3;
+    color: #571515;
+    padding: 12px 15px;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+#loginFailed {
+    display: none;
+}
+
 .btn-success {
     background-color: #28a745;
     border-color: #28a745;
@@ -131,16 +150,6 @@
 /* This is the css for login form
 * btn is copied from  default page btn
 * Copy register-title for title*/
-
-#loginSection {
-    display: none;
-}
-
-.login-container {
-    max-width: 600px;
-    margin: 60px auto;
-}
-
 .login-card {
     background: #ffffff;
     padding: 30px;

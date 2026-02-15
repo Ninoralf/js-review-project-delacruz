@@ -9,11 +9,11 @@
         <link rel="stylesheet" href="style.css">
 
     </head>
-    <body>
+    <body class="not-authenticated">
 
-        <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-            <div class="container-fluid">
-                <a class="navbar-brand" href="index.html">Full-Stack App Ninoralf Dela Cruz</a>
+        <header class="role-logged-out">
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+                <span class="navbar-brand mb-0 h1 text-white">Full-Stack App (Ninoralf Dela Cruz)</span>
 
                 <button
                     class="navbar-toggler"
@@ -36,120 +36,236 @@
                         </li>
                     </ul>
                 </div>
+            </nav>
+        </header>
 
-            </div>
-        </nav>
+        <header class="role-logged-in">
+            <nav class="navbar navbar-dark bg-dark px-4">
+                <span class="navbar-brand mb-0 h1 text-white">Full-Stack App (Ninoralf Dela Cruz)</span>
+                <div class="dropdown">
+                    <button class="btn btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                        Admin
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end">
+                        <li><a class="dropdown-item" id="adminProfileLink">Profile</a></li>
+                        <li><a class="dropdown-item" id="adminEmployeeLink">Employees</a></li>
+                        <li><a class="dropdown-item" id="adminAccountsLink">Accounts</a></li>
+                        <li><a class="dropdown-item" id="adminDepartmentLink">Departments</a></li>
+                        <li><a class="dropdown-item" id="adminRequestLink">My Requests</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
+                    </ul>
+                </div>
+            </nav>
+        </header>
 
-        <div id = "welcomeSection" class="container welcome-container">
-            <div class="welcome-card">
-
-                <h4 class="welcome-title">Welcome to Full-Stack App</h4>
-                <p class="welcome-subtitle">
+        <main>
+            <section id = "welcomeSection" class="container page active">
+                <div class="welcome-card">
+                    
+                    <h4 class="welcome-title">Welcome to Full-Stack App</h4>
+                    <p class="welcome-subtitle">
                     A static prototype before backend integration. Simulates:
-                </p>
-
-                <ul>
-                    <li>Email registration + fake verification</li>
-                    <li>Login with JWT-like token simulation</li>
-                    <li>Role-based UI (Admin/User)</li>
-                    <li>CRUD for Employees, Departments, Requests</li>
-                </ul>
-
-                <div class="note-box mt-3">
-                    ⚠ <strong>Note:</strong> All data is stored in <code>localStorage</code>. 
-                    Refresh to reset.
+                    </p>
+                
+                    <ul>
+                        <li>Email registration + fake verification</li>
+                        <li>Login with JWT-like token simulation</li>
+                        <li>Role-based UI (Admin/User)</li>
+                        <li>CRUD for Employees, Departments, Requests</li>
+                    </ul>
+                    
+                    <div class="note-box mt-3">
+                        ⚠ <strong>Note:</strong> All data is stored in <code>localStorage</code>. 
+                        Refresh to reset.
+                    </div>
+                    
+                    <div class="mt-4">
+                        <button class="btn btn-primary">
+                            Get Started →
+                        </button>
+                    </div>
                 </div>
-
-                <div class="mt-4">
-                    <button class="btn btn-primary">
-                        Get Started →
-                    </button>
+            </section>
+        
+            <section id = "registerSection" class="container page">
+                <div class="register-card">
+                    <h4 class="register-title">Register Account</h4>
+                    
+                    <form>
+                        <div class="mb-3">
+                            <label class="form-label">First Name</label>
+                            <input type="text" class="form-control" placeholder="">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" class="form-control" placeholder="">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="emailInput" class="form-control" placeholder="">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Password</label>
+                            <input type="password" class="form-control" placeholder="">
+                        </div>
+                        
+                        <button type="button" id="signUpbtn" class="btn btn-success me-2">Sign Up</button>
+                        <button type="button" class="btn btn-cancel">Cancel</button>
+                    </form>
                 </div>
-
-            </div>
-        </div>
-
-        <div id = "registerSection" class="container register-container">
-            <div class="register-card">
-                <h4 class="register-title">Register Account</h4>
-
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">First Name</label>
-                        <input type="text" class="form-control" placeholder="">
+            </section>
+            
+            <section id = "verifyEmail" class="container page">
+                <div class="verify-card">
+                    
+                    <h4 class="verify-title">Verify Your Email</h4>
+                    
+                    <div class="custom-success mb-3">
+                        ✔ A verification link has been sent to <strong id="emailOut">your email address</strong>.
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Last Name</label>
-                        <input type="text" class="form-control" placeholder="">
+                    
+                    <p>For demo purposes, click below to simulate verification:</p>
+                    
+                    <div class="mt-3">
+                        <button class="btn btn-success me-2">
+                            ✔ Simulate Email Verification
+                        </button>
+                        
+                        <button type="button" id="goToLogin" class="btn btn-outline-secondary">
+                            Go to Login
+                        </button>
                     </div>
-
-                    <div class="mb-3">
-                        <label class="form-label">Email</label>
-                        <input type="email" id="emailInput" class="form-control" placeholder="">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label">Password</label>
-                        <input type="password" class="form-control" placeholder="">
-                    </div>
-
-                    <button type="button" id="signUpbtn" class="btn btn-success me-2">Sign Up</button>
-                    <button type="button" class="btn btn-cancel">Cancel</button>
-                </form>
-            </div>
-        </div>
-
-        <div id = "verifyEmail" class="container verify-container">
-            <div class="verify-card">
-
-                <h4 class="verify-title">Verify Your Email</h4>
-
-                <div class="custom-success mb-3">
-                    ✔ A verification link has been sent to <strong id="emailOut">your email address</strong>.
+                    
                 </div>
+            </section>
+            
+            <section id = "loginSection" class="container page">
+                <div class="login-card">
+                    
+                    <div id="loginFailed" class="custom-failed mb-3">
+                        <bold>Try again!</bold> Wrong credentials or User not exist!
+                    </div>
 
-                <p>For demo purposes, click below to simulate verification:</p>
-
-                <div class="mt-3">
-                    <button class="btn btn-success me-2">
-                        ✔ Simulate Email Verification
-                    </button>
-
-                    <button type="button" id="goToLogin" class="btn btn-outline-secondary">
-                        Go to Login
-                    </button>
+                    <h4 class="register-title">Login</h4>
+                    
+                    <form>
+                        <div class="mb-4">
+                            <label class="form-label">Email</label>
+                            <input type="email" id="loginEmail" class="form-control" placeholder="Email">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="form-label">Password</label>
+                            <input type="password" id="loginPassword" class="form-control" placeholder="Password">
+                        </div>
+                        
+                        <button type="button" class="btn btn-primary me-2" onclick="login()">Login</button>
+                        <button type="button" class="btn btn-cancel">Cancel</button>
+                        
+                    </form>
                 </div>
+            </section>
 
-            </div>
-        </div>
-
-        <div id = "loginSection" class="container login-container">
-            <div class="login-card">
-
-                <h4 class="register-title">Login</h4>
-
-                <form>
-                    <div class="mb-4">
-                        <label class="form-label">Email</label>
-                        <input type="text" class="form-control" placeholder="">
+            <section id="adminMyProfile" class="container is-admin page">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>My Profile</h5>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="form-label">Password</label>
-                        <input type="text" class="form-control" placeholder="">
+                    <div class="card-body">
+                        <p><strong>Name:</strong> Admin User</p>
+                        <p><strong>Email:</strong> admin@example.com</p>
+                        <p><strong>Role:</strong> Admin</p>
+                        <button class="btn btn-outline-primary btn-sm">Edit Profile</button>
                     </div>
+                </div>
+            </section>
 
-                    <button type="submit" class="btn btn-primary me-2">Login</button>
-                    <button type="button" class="btn btn-cancel">Cancel</button>
+            <section id="adminEmployee" class="container is-admin page">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5>Employees</h5>
+                        <button class="btn btn-success btn-sm">+ Add Employee</button>
+                    </div>
+                    <div class="card-body">
+                        <table class="table table-bordered table-striped mb-3">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Position</th>
+                                    <th>Dept</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="employeeTableBody">
+                                <tr>
+                                    <td colspan="5" class="text-center">No employees.</td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                </form>
-            </div>
-        </div>
+                        <!-- Add/Edit Employee Form -->
+                        <form id="employeeForm" class="border p-3 d-none">
+                            <div class="mb-2">
+                                <label for="employeeId" class="form-label">Employee ID</label>
+                                <input type="text" id="employeeId" class="form-control">
+                            </div>
+                            <div class="mb-2">
+                                <label for="employeeEmail" class="form-label">User Email</label>
+                                <input type="email" id="employeeEmail" class="form-control">
+                            </div>
+                            <div class="mb-2">
+                                <label for="employeePosition" class="form-label">Position</label>
+                                <input type="text" id="employeePosition" class="form-control">
+                            </div>
+                            <div class="mb-2">
+                                <label for="employeeDept" class="form-label">Department</label>
+                                <input type="text" id="employeeDept" class="form-control" value="Engineering">
+                            </div>
+                            <div class="mb-2">
+                                <label for="employeeHireDate" class="form-label">Hire Date</label>
+                                <input type="date" id="employeeHireDate" class="form-control">
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm">Save</button>
+                            <button type="button" class="btn btn-secondary btn-sm" id="cancelEmployee">Cancel</button>
+                        </form>
+                    </div>
+                </div>
+            </section>
 
+            <section id="adminAccounts" class="container is-admin page">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Account</h5>
+                    </div>
+                </div>
+            </section>
 
+            <section id="adminDepartment" class="container is-admin page">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Department</h5>
+                    </div>
+                </div>
+            </section>
+
+            <section id="adminRequest" class="container is-admin page">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>My Request</h5>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
         <script src="script.js"></script>
-
+        
     </body>
-</html>
+    </html>
