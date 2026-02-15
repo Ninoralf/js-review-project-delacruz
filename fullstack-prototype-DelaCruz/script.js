@@ -1,3 +1,5 @@
+let currentUser = null;
+
 function showPage(pageId) {
     document.querySelectorAll(".page").forEach(page => {
         page.classList.remove("active");
@@ -7,8 +9,12 @@ function showPage(pageId) {
 }
 
 const users = [
-    {email: "ninz@gmail.com", password: "yes", isAdmin: true },
-    {email: "admin", password: "admin", isAdmin: true } 
+    {firstname: "Ninoralf", lastname: "Dela Cruz", email: "ninz@gmail.com", password: "yes", isAdmin: true },
+    {firstname: "Admin", lastname: "Admin", email: "admin", password: "admin", isAdmin: true } 
+];
+
+const employee = [
+    {id: "1005", firstname: "ching", lastname: "ching", position: "Manager", department: "Hakdog"}
 ];
 
 function login() {
@@ -23,7 +29,15 @@ function login() {
         // errorMessage.textContent = "Invalid email or password!";
         return;
     }
-    
+
+    errorMessage.style.display = "none"; 
+
+    currentUser = user;
+
+    document.getElementById("profileName").textContent = currentUser.firstname + " " + currentUser.lastname;
+    document.getElementById("profileEmail").textContent = currentUser.email;
+    document.getElementById("profileRole").textContent = currentUser.isAdmin ? "Admin" : "User";
+
     document.body.classList.remove("not-authenticated");
     document.body.classList.add("authenticated");
     document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
@@ -63,9 +77,6 @@ document.getElementById("adminRequestLink").addEventListener("click", function (
     showPage("adminRequest");    
 });
 
-
-
-
 document.getElementById("registerLink").addEventListener("click", function (e) {
     e.preventDefault();
     showPage("registerSection");    
@@ -76,20 +87,44 @@ document.getElementById("loginLink").addEventListener("click", function (e) {
     showPage("loginSection");
 });
 
-document.getElementById("signUpbtn").addEventListener("click", function (e) {
-    const emailInput = document.getElementById("emailInput");
+function signUpbtn() {
+    const firstname = document.getElementById("firstNameInput");
+    const lastname = document.getElementById("lastNameInput");
+    const email = document.getElementById("emailInput");
+    const password = document.getElementById("passwordInput");
     const displayLabel = document.getElementById("emailOut");
-    e.preventDefault();
+
+    const userExists = users.some(user => user.email === email.value);
+    
+    if (userExists) {   
+        document.getElementById("regiterFailed").style.display = "block";
+        cancelSignup();
+        return;
+    }
+
+    document.getElementById("regiterFailed").style.display = "none";
+
+     users.push({
+        firstname: firstname.value,
+        lastname: lastname.value,
+        email: email.value,
+        password: password.value,
+        isAdmin: false   
+    });
     showPage("verifyEmail");
-    displayLabel.textContent = emailInput.value;
-});
+    displayLabel.textContent = email.value;
+    document.getElementById("registerForm").reset();
+}
+
+function cancelSignup(){
+    document.getElementById("registerForm").reset();
+}
 
 document.getElementById("goToLogin").addEventListener("click", function (e) {
     e.preventDefault();   
     showPage("loginSection");
 });
 
-// this is for edit profile button yey
 const editProfileBtn = document.querySelector(".editProfile-btn");
 const profileName = document.getElementById("profileName");
 const profileEmail = document.getElementById("profileEmail");
@@ -99,34 +134,46 @@ let profileEditMode = false;
 
 editProfileBtn.addEventListener("click", function () {
 
-    // ENTER EDIT MODE
     if (!profileEditMode) {
-
         profileName.innerHTML = `<input type="text" class="form-control form-control-sm" id="editName" value="${profileName.textContent}">`;
         profileEmail.innerHTML = `<input type="email" class="form-control form-control-sm" id="editEmail" value="${profileEmail.textContent}">`;
 
         editProfileBtn.textContent = "Save";
         editProfileBtn.classList.remove("btn-outline-primary");
-        editProfileBtn.classList.add("btn-success");
+        editProfileBtn.classList.add("btn-green");
 
         profileEditMode = true;
-    }
-    // SAVE MODE
-    else {
 
-        const newName = document.getElementById("editName").value;
-        const newEmail = document.getElementById("editEmail").value;
+    } else {
+        const newName = document.getElementById("editName").value.trim();
+        const newEmail = document.getElementById("editEmail").value.trim();
+
+        const [firstName, ...lastNameParts] = newName.split(" ");
+        const lastName = lastNameParts.join(" ");
 
         profileName.textContent = newName;
         profileEmail.textContent = newEmail;
 
+        currentUser.firstname = firstName;
+        currentUser.lastname = lastName;
+        currentUser.email = newEmail;
+
+        const index = users.findIndex(u => u === currentUser);
+        if (index !== -1) {
+            users[index] = currentUser;
+        }
+
         editProfileBtn.textContent = "Edit Profile";
-        editProfileBtn.classList.remove("btn-success");
+        editProfileBtn.classList.remove("btn-green");
         editProfileBtn.classList.add("btn-outline-primary");
 
         profileEditMode = false;
+
+        // butang dri success update "profile update successfully"
+
     }
 });
+
 
 // this is for EMPLOYEE CRUD yey
 const addEmployeeBtn = document.getElementById("addEmployeeBtn");

@@ -92,29 +92,33 @@
                 <div class="register-card">
                     <h4 class="register-title">Register Account</h4>
                     
-                    <form>
+                    <form id="registerForm">
                         <div class="mb-3">
                             <label class="form-label">First Name</label>
-                            <input type="text" class="form-control" placeholder="">
+                            <input type="text" class="form-control" id="firstNameInput">
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label">Last Name</label>
-                            <input type="text" class="form-control" placeholder="">
+                            <input type="text" class="form-control" id="lastNameInput">
                         </div>
                         
                         <div class="mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email" id="emailInput" class="form-control" placeholder="">
+                            <input type="email" class="form-control" id="emailInput">
                         </div>
                         
                         <div class="mb-4">
                             <label class="form-label">Password</label>
-                            <input type="password" class="form-control" placeholder="">
+                            <input type="password" class="form-control" id="passwordInput">
                         </div>
                         
-                        <button type="button" id="signUpbtn" class="btn btn-success me-2">Sign Up</button>
-                        <button type="button" class="btn btn-cancel">Cancel</button>
+                        <div id="regiterFailed" class="custom-failed mb-3">
+                            <bold>Email alredy exist!</bold> please try another...
+                        </div>
+
+                        <button type="button" onclick="signUpbtn()" class="btn btn-success me-2">Sign Up</button>
+                        <button type="button" onclick="cancelSignup()" class="btn btn-cancel">Cancel</button>
                     </form>
                 </div>
             </section>
@@ -176,9 +180,9 @@
                         <h5>My Profile</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Name:</strong> <span id="profileName">Admin User</span></p>
-                        <p><strong>Email:</strong> <span id="profileEmail">admin@example.com</span></p>
-                        <p><strong>Role:</strong> <span id="profileRole">Admin</span></p>
+                        <p><strong>Name:</strong> <list id="profileName">Admin User</list></p>
+                        <p><strong>Email:</strong> <list id="profileEmail">admin@example.com</list></p>
+                        <p><strong>Role:</strong> <list id="profileRole">Admin</list></p>
                         <button class="btn btn-outline-primary btn-sm editProfile-btn">Edit Profile</button>
                     </div>
                 </div>

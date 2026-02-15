@@ -12,16 +12,21 @@
     display: block;
 }
 
-body.not-authenticated .role-logged-out {
+/* body.not-authenticated .role-logged-out {
     display: block;
-}
+} */
+
+/* body.authenticated .role-logged-in {
+.role-admin { display: none; }
+
+    display: block;
+} */
+
+.role-admin { display: none; }
+body.is-admin .role-admin { display: block; }
 
 body.authenticated .role-logged-out {
     display: none;
-}
-
-body.authenticated .role-logged-in {
-    display: block;
 }
 
 body.not-authenticated .role-logged-in {
@@ -114,6 +119,10 @@ body.not-authenticated .role-logged-in {
 }
 
 /* This is the css for registration Form */
+#regiterFailed {
+    display: none;
+}
+
 .register-card {
     background: #ffffff;
     padding: 30px;
