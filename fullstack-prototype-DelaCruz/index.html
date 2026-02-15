@@ -176,10 +176,10 @@
                         <h5>My Profile</h5>
                     </div>
                     <div class="card-body">
-                        <p><strong>Name:</strong> Admin User</p>
-                        <p><strong>Email:</strong> admin@example.com</p>
-                        <p><strong>Role:</strong> Admin</p>
-                        <button class="btn btn-outline-primary btn-sm">Edit Profile</button>
+                        <p><strong>Name:</strong> <span id="profileName">Admin User</span></p>
+                        <p><strong>Email:</strong> <span id="profileEmail">admin@example.com</span></p>
+                        <p><strong>Role:</strong> <span id="profileRole">Admin</span></p>
+                        <button class="btn btn-outline-primary btn-sm editProfile-btn">Edit Profile</button>
                     </div>
                 </div>
             </section>
@@ -188,7 +188,7 @@
                 <div class="card">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5>Employees</h5>
-                        <button class="btn btn-success btn-sm">+ Add Employee</button>
+                        <button class="btn btn-success btn-sm" id="addEmployeeBtn">+ Add Employee</button>
                     </div>
                     <div class="card-body">
                         <table class="table table-bordered table-striped mb-3">
@@ -202,38 +202,42 @@
                                 </tr>
                             </thead>
                             <tbody id="employeeTableBody">
-                                <tr>
+                                <tr id="noEmployeesRow">
                                     <td colspan="5" class="text-center">No employees.</td>
                                 </tr>
                             </tbody>
                         </table>
-
-                        <!-- Add/Edit Employee Form -->
-                        <form id="employeeForm" class="border p-3 d-none">
-                            <div class="mb-2">
-                                <label for="employeeId" class="form-label">Employee ID</label>
-                                <input type="text" id="employeeId" class="form-control">
-                            </div>
-                            <div class="mb-2">
-                                <label for="employeeEmail" class="form-label">User Email</label>
-                                <input type="email" id="employeeEmail" class="form-control">
-                            </div>
-                            <div class="mb-2">
-                                <label for="employeePosition" class="form-label">Position</label>
-                                <input type="text" id="employeePosition" class="form-control">
-                            </div>
-                            <div class="mb-2">
-                                <label for="employeeDept" class="form-label">Department</label>
-                                <input type="text" id="employeeDept" class="form-control" value="Engineering">
-                            </div>
-                            <div class="mb-2">
-                                <label for="employeeHireDate" class="form-label">Hire Date</label>
-                                <input type="date" id="employeeHireDate" class="form-control">
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-sm">Save</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="cancelEmployee">Cancel</button>
-                        </form>
                     </div>
+                </div>
+
+                <br>
+
+                <div class="card">
+                    <!-- Add/Edit Employee Form -->
+                    <form id="employeeForm" class="border p-3 d-none">
+                        <div class="mb-2">
+                            <label for="employeeId" class="form-label">Employee ID</label>
+                            <input type="text" id="employeeId" class="form-control">
+                        </div>
+                        <div class="mb-2">
+                            <label for="employeeEmail" class="form-label">User Email</label>
+                            <input type="email" id="employeeEmail" class="form-control">
+                        </div>
+                        <div class="mb-2">
+                            <label for="employeePosition" class="form-label">Position</label>
+                            <input type="text" id="employeePosition" class="form-control">
+                        </div>
+                        <div class="mb-2">
+                            <label for="employeeDept" class="form-label">Department</label>
+                            <input type="text" id="employeeDept" class="form-control" value="Engineering">
+                        </div>
+                        <div class="mb-2">
+                            <label for="employeeHireDate" class="form-label">Hire Date</label>
+                            <input type="date" id="employeeHireDate" class="form-control">
+                        </div>
+                        <button type="submit" class="btn btn-green btn-sm">Save</button>
+                        <button type="button" class="btn btn-grey btn-sm" id="cancelEmployee">Cancel</button>
+                    </form>
                 </div>
             </section>
 

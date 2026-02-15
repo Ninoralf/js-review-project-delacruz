@@ -64,6 +64,55 @@ body.not-authenticated .role-logged-in {
     font-weight: 500;
 }
 
+.btn-sm {
+    padding: 8px 16px;
+    font-weight: 500;
+}
+
+.btn-red {
+    color: red;
+    outline: 1px solid red;
+    background-color: white;
+}
+
+.btn-red:hover {
+    color: white;
+    background: red;
+}
+
+.btn-blue {
+    color: blue;
+    outline: 1px solid blue;
+    background-color: white;
+}
+
+.btn-blue:hover {
+    color: white;
+    background-color: blue;
+}
+
+.btn-green {
+    color: rgb(44, 196, 1);
+    outline: 1px solid rgb(44, 196, 1);
+    background-color: white;
+}
+
+.btn-green:hover {
+    color: white;
+    background-color: rgb(44, 196, 1);
+}
+
+.btn-grey {
+    color: grey;
+    outline: 1px solid grey;
+    background-color: white;
+}
+
+.btn-grey:hover {
+    color: white;
+    background-color: grey;
+}
+
 /* This is the css for registration Form */
 .register-card {
     background: #ffffff;
