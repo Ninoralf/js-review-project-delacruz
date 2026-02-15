@@ -1,13 +1,5 @@
 let currentUser = null;
 
-function showPage(pageId) {
-    document.querySelectorAll(".page").forEach(page => {
-        page.classList.remove("active");
-    });
-
-    document.getElementById(pageId).classList.add("active");
-}
-
 const users = [
     {firstname: "Ninoralf", lastname: "Dela Cruz", email: "ninz@gmail.com", password: "yes", isAdmin: true },
     {firstname: "Admin", lastname: "Admin", email: "admin", password: "admin", isAdmin: true } 
@@ -16,6 +8,10 @@ const users = [
 const employee = [
     {id: "1005", firstname: "ching", lastname: "ching", position: "Manager", department: "Hakdog"}
 ];
+
+// Listen for hash changes
+window.addEventListener("hashchange", handleRouting);
+window.addEventListener("load", handleRouting); // handle initial load
 
 function login() {
     const userEmail = document.getElementById("loginEmail").value;
@@ -40,52 +36,43 @@ function login() {
 
     document.body.classList.remove("not-authenticated");
     document.body.classList.add("authenticated");
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    document.getElementById("adminMyProfile").classList.add("active");
+    window.location.hash = "#/adminMyProfile";
 }
 
 function logout() {
     document.body.classList.remove("authenticated");
     document.body.classList.add("not-authenticated");
 
-    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-    document.getElementById("welcomeSection").classList.add("active");
+    window.location.hash = "#/welcomeSection";
+    currentUser = null;
+
 }
 
-document.getElementById("adminProfileLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("adminMyProfile");    
-});
+function handleRouting() {
+    const hash = window.location.hash || "#/welcomeSection";
 
-document.getElementById("adminEmployeeLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("adminEmployee");    
-});
+    const pageId = hash.slice(2);  
+    const page = document.getElementById(pageId);
 
-document.getElementById("adminAccountsLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("adminAccounts");    
-});
+    document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+    if (page) page.classList.add("active");
 
-document.getElementById("adminDepartmentLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("adminDepartment");    
-});
+    if (parts[0] === "registerSection") {
+        const registerPage = document.getElementById("registerSection");
+        if (registerPage) registerPage.classList.add("active");
+    }
 
-document.getElementById("adminRequestLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("adminRequest");    
-});
+    const adminPages = ["adminMyProfile","adminEmployee","adminAccounts","adminDepartment","adminRequest"];
+    if (adminPages.includes(pageId) && (!currentUser || !currentUser.isAdmin)) {
+        window.location.hash = "#/welcomeSection";
+        return;
+    }
 
-document.getElementById("registerLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("registerSection");    
-});
-
-document.getElementById("loginLink").addEventListener("click", function (e) {
-    e.preventDefault();
-    showPage("loginSection");
-});
+    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail", "verifyEmail"];
+    if (!currentUser && !publicPages.includes(pageId)) {
+        window.location.hash = "#/welcomeSection";
+    }
+}
 
 function signUpbtn() {
     const firstname = document.getElementById("firstNameInput");
@@ -96,11 +83,19 @@ function signUpbtn() {
 
     const userExists = users.some(user => user.email === email.value);
     
-    if (userExists) {   
-        document.getElementById("regiterFailed").style.display = "block";
-        cancelSignup();
-        return;
-    }
+    if (password.value.length < 6) {
+    document.getElementById("registerFailed").innerHTML = "<strong>Password too short!</strong> Please enter at least 6 characters.";
+    document.getElementById("registerFailed").style.display = "block";
+    return;
+}
+
+// User exists check
+if (userExists) {   
+    document.getElementById("registerFailed").innerHTML = "<strong>Email already exists!</strong> Please try another...";
+    document.getElementById("registerFailed").style.display = "block";
+    cancelSignup();
+    return;
+}
 
     document.getElementById("regiterFailed").style.display = "none";
 
@@ -111,19 +106,14 @@ function signUpbtn() {
         password: password.value,
         isAdmin: false   
     });
-    showPage("verifyEmail");
-    displayLabel.textContent = email.value;
     document.getElementById("registerForm").reset();
+    window.location.hash = "#/verifyEmail";
+    displayLabel.textContent = email.value;
 }
 
 function cancelSignup(){
     document.getElementById("registerForm").reset();
 }
-
-document.getElementById("goToLogin").addEventListener("click", function (e) {
-    e.preventDefault();   
-    showPage("loginSection");
-});
 
 const editProfileBtn = document.querySelector(".editProfile-btn");
 const profileName = document.getElementById("profileName");
@@ -133,6 +123,7 @@ const profileRole = document.getElementById("profileRole");
 let profileEditMode = false;
 
 editProfileBtn.addEventListener("click", function () {
+    document.getElementById("editProfile-Success").style.display = "none";
 
     if (!profileEditMode) {
         profileName.innerHTML = `<input type="text" class="form-control form-control-sm" id="editName" value="${profileName.textContent}">`;
@@ -162,16 +153,15 @@ editProfileBtn.addEventListener("click", function () {
         if (index !== -1) {
             users[index] = currentUser;
         }
-
+        
         editProfileBtn.textContent = "Edit Profile";
         editProfileBtn.classList.remove("btn-green");
         editProfileBtn.classList.add("btn-outline-primary");
-
-        profileEditMode = false;
-
-        // butang dri success update "profile update successfully"
-
+        
+        profileEditMode = false;    
     }
+
+    if(profileEditMode) document.getElementById("editProfile-Success").style.display = "block";
 });
 
 

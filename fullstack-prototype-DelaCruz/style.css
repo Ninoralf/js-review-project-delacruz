@@ -35,6 +35,7 @@ body.not-authenticated .role-logged-in {
 
 .navbar-brand{
     font-size: large;
+    padding: left 5rem;
 }
 
 .welcome-card {
@@ -119,7 +120,7 @@ body.not-authenticated .role-logged-in {
 }
 
 /* This is the css for registration Form */
-#regiterFailed {
+#registerFailed {
     display: none;
 }
 
@@ -213,6 +214,10 @@ body.not-authenticated .role-logged-in {
     padding: 30px;
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+#editProfile-Success {
+    display: none;
 }
 
 

@@ -7,13 +7,16 @@
         <link
         href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <link rel="stylesheet" href="style.css">
+        <link rel="icon" type="image/jpeg" href="image/logo.jpg">
+
 
     </head>
     <body class="not-authenticated">
 
         <header class="role-logged-out">
             <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-                <span class="navbar-brand mb-0 h1 text-white">Full-Stack App (Ninoralf Dela Cruz)</span>
+                <a href="#/welcomeSection" class="navbar-brand d-flex align-items-center">
+                    <img src="image/logo.jpg" alt="Logo" width="75" height="75" class="d-inline-block align-text-top me-2"><h3>Full-Stack App (Ninoralf Dela Cruz)</h3></a>
 
                 <button
                     class="navbar-toggler"
@@ -29,10 +32,10 @@
                 <div class="collapse navbar-collapse" id="navbarNav">
                     <ul class="navbar-nav ms-auto flex-column">
                         <li class="nav-item">
-                        <a class="nav-link  " href="#" id="loginLink">Login</a>
+                        <a class="nav-link  " href="#/loginSection">Login</a>
                         </li>
                         <li class="nav-item">
-                        <a class="nav-link" href="#" id="registerLink">Register</a>
+                        <a class="nav-link" href="#/registerSection">Register</a>
                         </li>
                     </ul>
                 </div>
@@ -47,11 +50,11 @@
                         Admin
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
-                        <li><a class="dropdown-item" id="adminProfileLink">Profile</a></li>
-                        <li><a class="dropdown-item" id="adminEmployeeLink">Employees</a></li>
-                        <li><a class="dropdown-item" id="adminAccountsLink">Accounts</a></li>
-                        <li><a class="dropdown-item" id="adminDepartmentLink">Departments</a></li>
-                        <li><a class="dropdown-item" id="adminRequestLink">My Requests</a></li>
+                        <li><a class="dropdown-item" href="#/adminMyProfile">Profile</a></li>
+                        <li><a class="dropdown-item" href="#/adminEmployee">Employees</a></li>
+                        <li><a class="dropdown-item" href="#/adminAccounts">Accounts</a></li>
+                        <li><a class="dropdown-item" href="#/adminDepartment">Departments</a></li>
+                        <li><a class="dropdown-item" href="#/adminRequest">My Requests</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
                     </ul>
@@ -113,9 +116,7 @@
                             <input type="password" class="form-control" id="passwordInput">
                         </div>
                         
-                        <div id="regiterFailed" class="custom-failed mb-3">
-                            <bold>Email alredy exist!</bold> please try another...
-                        </div>
+                        <div id="registerFailed" class="custom-failed mb-3"></div>
 
                         <button type="button" onclick="signUpbtn()" class="btn btn-success me-2">Sign Up</button>
                         <button type="button" onclick="cancelSignup()" class="btn btn-cancel">Cancel</button>
@@ -139,9 +140,9 @@
                             ✔ Simulate Email Verification
                         </button>
                         
-                        <button type="button" id="goToLogin" class="btn btn-outline-secondary">
+                        <a href="#/loginSection" class="btn btn-outline-secondary">
                             Go to Login
-                        </button>
+                        </a>
                     </div>
                     
                 </div>
@@ -179,10 +180,13 @@
                     <div class="card-header">
                         <h5>My Profile</h5>
                     </div>
+                    <div id="editProfile-Success" class="custom-success mb-3">
+                        ✔ Profile updated <strong>successfully!</strong>.
+                    </div>
                     <div class="card-body">
                         <p><strong>Name:</strong> <list id="profileName">Admin User</list></p>
                         <p><strong>Email:</strong> <list id="profileEmail">admin@example.com</list></p>
-                        <p><strong>Role:</strong> <list id="profileRole">Admin</list></p>
+                        <p><strong>Role:</strong> <list id="profileRole">Admin</span></p>
                         <button class="btn btn-outline-primary btn-sm editProfile-btn">Edit Profile</button>
                     </div>
                 </div>
