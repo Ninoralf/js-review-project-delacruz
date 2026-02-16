@@ -1,20 +1,35 @@
+loadFromStorage();
 let currentUser = null;
+const STORAGE_KEY = 'ipt_demo_v1';
+
 
 // Listen for hash changes
 window.addEventListener("hashchange", handleRouting);
 window.addEventListener("load", handleRouting); // handle initial load
 
-window.db = window.db || { accounts: [] };
-window.db.accounts = JSON.parse(localStorage.getItem("accounts")) || [];
-window.db.accounts = [
-        {
-            firstname: "Ninoralf",
-            lastname: "Dela Cruz",
-            email: "admin",
-            password: "admin",
-            isAdmin: true,
-            verified: true
-        }];
+function loadFromStorage() {
+    try {
+        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!data || !data.accounts || !data.departments) throw "missing data";
+
+        window.db = data;
+    } catch (err) {
+        // If missing or corrupt, seed default data
+        window.db = {
+            accounts: [
+                { firstname: "Admin", lastname: "User", email: "admin@example.com", password: "Password123!", verified: true, isAdmin: true },
+                { firstname: "Ninoralf", lastname: "Dela Cruz", email: "admin", password: "admin", verified: true, isAdmin: true }
+            ],
+            departments: ["Engineering", "HR"]
+        };
+        saveToStorage();
+    }
+}
+
+function saveToStorage() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(window.db));
+}
+
 
 
 function login() {
@@ -44,22 +59,14 @@ function login() {
     document.getElementById("profileEmail").textContent = currentUser.email;
     document.getElementById("profileRole").textContent = currentUser.isAdmin ? "Admin" : "User";
 
-    document.body.classList.remove("not-authenticated");
-    document.body.classList.add("authenticated");
     window.location.hash = "#/adminMyProfile";
 }
 
 function logout() {
-    document.body.classList.remove("authenticated");
-    document.body.classList.add("not-authenticated");
     localStorage.removeItem("auth_token");
     setAuthState(false);
-    window.location.hash = "#/welcomeSection";
-
-
-    window.location.hash = "#/welcomeSection";
     currentUser = null;
-
+    window.location.hash = "#/welcomeSection";
 }
 
 function handleRouting() {
@@ -95,7 +102,6 @@ function signUpbtn() {
     const password = document.getElementById("passwordInput");
     const displayLabel = document.getElementById("emailOut");
 
-    window.db = window.db || { accounts: [] };
     const userExists = window.db.accounts.some(user => user.email === email.value);
     
         if (password.value.length < 6) {
@@ -120,13 +126,16 @@ function signUpbtn() {
         password: password.value,
         verified: false
     });
-    localStorage.setItem("accounts", JSON.stringify(window.db.accounts));
+    saveToStorage();
     localStorage.setItem("unverified_email", email.value);
-
-    displayLabel.textContent = email.value;
     document.getElementById("registerForm").reset();
 
     window.location.hash = "#/verifyEmail";
+
+    setTimeout(() => {
+        const displayLabel = document.getElementById("emailOut");
+        if (displayLabel) displayLabel.textContent = email.value;
+    }, 0);
 }
 
 function cancelSignup(){
@@ -138,8 +147,13 @@ document.getElementById("simulateVerificationBtn").addEventListener("click", fun
     const account = window.db.accounts.find(acc => acc.email === email);
     if (account) {
         account.verified = true;
-        localStorage.setItem("accounts", JSON.stringify(window.db.accounts));
+        saveToStorage();
         localStorage.removeItem("unverified_email");
+
+    // // Auto-login after verification
+    // localStorage.setItem("auth_token", account.email);
+    // setAuthState(true, account);
+
         window.location.hash = "#/loginSection";
     }
 });
@@ -190,12 +204,12 @@ editProfileBtn.addEventListener("click", function () {
         currentUser.lastname = lastName;
         currentUser.email = newEmail;
 
-        const index = window.db.accounts.findIndex(u => u === currentUser);
+        const index = window.db.accounts.findIndex(u => u === currentUser.email);
         if (index !== -1) {
-            window.db.accounts[index] = currentUser;
+            window.db.accounts[index] = { ...currentUser, firstname: firstName, lastname: lastName, email: newEmail };
         }
 
-        localStorage.setItem("accounts",JSON.stringify(window.db.accounts));
+        saveToStorage();
         
         editProfileBtn.textContent = "Edit Profile";
         editProfileBtn.classList.remove("btn-green");
