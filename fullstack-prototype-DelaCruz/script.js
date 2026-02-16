@@ -1,9 +1,13 @@
-loadFromStorage();
 let currentUser = null;
 const STORAGE_KEY = 'ipt_demo_v1';
+loadFromStorage();
 
+const token = localStorage.getItem("auth_token");
+if (token) {
+    currentUser = window.db.accounts.find(u => u.email === token);
+    if (currentUser) setAuthState(true, currentUser);
+}
 
-// Listen for hash changes
 window.addEventListener("hashchange", handleRouting);
 window.addEventListener("load", handleRouting); // handle initial load
 
@@ -30,12 +34,11 @@ function saveToStorage() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(window.db));
 }
 
-
-
 function login() {
     const userEmail = document.getElementById("loginEmail").value;
     const userPassword = document.getElementById("loginPassword").value;
     const errorMessage = document.getElementById("loginFailed");
+    const logData = document.getAnimations("loginData");
     errorMessage.style.display = "none";
 
     // const user = users.find(u => u.email === userEmail); //old
@@ -48,7 +51,6 @@ function login() {
         }, 3000);
         return;
     }
-    
 
     localStorage.setItem("auth_token", user.email);
     setAuthState(true, user);
@@ -58,8 +60,8 @@ function login() {
     document.getElementById("profileName").textContent = currentUser.firstname + " " + currentUser.lastname;
     document.getElementById("profileEmail").textContent = currentUser.email;
     document.getElementById("profileRole").textContent = currentUser.isAdmin ? "Admin" : "User";
-
     window.location.hash = "#/adminMyProfile";
+    logData.FormData.remove();
 }
 
 function logout() {
@@ -78,20 +80,16 @@ function handleRouting() {
     document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
     if (page) page.classList.add("active");
 
-    if (parts[0] === "registerSection") {
-        const registerPage = document.getElementById("registerSection");
-        if (registerPage) registerPage.classList.add("active");
-    }
-
     const adminPages = ["adminMyProfile","adminEmployee","adminAccounts","adminDepartment","adminRequest"];
     if (adminPages.includes(pageId) && (!currentUser || !currentUser.isAdmin)) {
         window.location.hash = "#/welcomeSection";
         return;
     }
 
-    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail", "verifyEmail"];
+    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail"];
     if (!currentUser && !publicPages.includes(pageId)) {
         window.location.hash = "#/welcomeSection";
+        return;
     }
 }
 
@@ -104,7 +102,7 @@ function signUpbtn() {
 
     const userExists = window.db.accounts.some(user => user.email === email.value);
     
-        if (password.value.length < 6) {
+    if (password.value.length < 6) {
         document.getElementById("registerFailed").innerHTML = "<strong>Password too short!</strong> Please enter at least 6 characters.";
         document.getElementById("registerFailed").style.display = "block";
         return;
@@ -130,12 +128,9 @@ function signUpbtn() {
     localStorage.setItem("unverified_email", email.value);
     document.getElementById("registerForm").reset();
 
-    window.location.hash = "#/verifyEmail";
+    displayLabel.textContent = email.value;
 
-    setTimeout(() => {
-        const displayLabel = document.getElementById("emailOut");
-        if (displayLabel) displayLabel.textContent = email.value;
-    }, 0);
+    window.location.hash = "#/verifyEmail";
 }
 
 function cancelSignup(){
@@ -149,11 +144,6 @@ document.getElementById("simulateVerificationBtn").addEventListener("click", fun
         account.verified = true;
         saveToStorage();
         localStorage.removeItem("unverified_email");
-
-    // // Auto-login after verification
-    // localStorage.setItem("auth_token", account.email);
-    // setAuthState(true, account);
-
         window.location.hash = "#/loginSection";
     }
 });
@@ -215,13 +205,12 @@ editProfileBtn.addEventListener("click", function () {
         editProfileBtn.classList.remove("btn-green");
         editProfileBtn.classList.add("btn-outline-primary");
         
-        profileEditMode = false;  
-        
         successBox.style.display = "block";
-
+        
         setTimeout(() => {
             successBox.style.display = "none";
         }, 3000);
+        profileEditMode = false;  
     }
 
 });
