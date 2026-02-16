@@ -1,32 +1,42 @@
 let currentUser = null;
 
-const users = [
-    {firstname: "Ninoralf", lastname: "Dela Cruz", email: "ninz@gmail.com", password: "yes", isAdmin: true },
-    {firstname: "Admin", lastname: "Admin", email: "admin", password: "admin", isAdmin: true } 
-];
-
-const employee = [
-    {id: "1005", firstname: "ching", lastname: "ching", position: "Manager", department: "Hakdog"}
-];
-
 // Listen for hash changes
 window.addEventListener("hashchange", handleRouting);
 window.addEventListener("load", handleRouting); // handle initial load
+
+window.db = window.db || { accounts: [] };
+window.db.accounts = JSON.parse(localStorage.getItem("accounts")) || [];
+window.db.accounts = [
+        {
+            firstname: "Ninoralf",
+            lastname: "Dela Cruz",
+            email: "admin",
+            password: "admin",
+            isAdmin: true,
+            verified: true
+        }];
+
 
 function login() {
     const userEmail = document.getElementById("loginEmail").value;
     const userPassword = document.getElementById("loginPassword").value;
     const errorMessage = document.getElementById("loginFailed");
+    errorMessage.style.display = "none";
 
-    const user = users.find(u => u.email === userEmail);
+    // const user = users.find(u => u.email === userEmail); //old
+    const user = window.db.accounts.find(u => u.email === userEmail && u.password === userPassword && u.verified);
 
-    if (!user || user.password !== userPassword) {
+    if (!user) {
         errorMessage.style.display = "block";
-        // errorMessage.textContent = "Invalid email or password!";
+        setTimeout(() => {    
+            errorMessage.style.display = "none"; 
+        }, 3000);
         return;
     }
+    
 
-    errorMessage.style.display = "none"; 
+    localStorage.setItem("auth_token", user.email);
+    setAuthState(true, user);
 
     currentUser = user;
 
@@ -42,6 +52,10 @@ function login() {
 function logout() {
     document.body.classList.remove("authenticated");
     document.body.classList.add("not-authenticated");
+    localStorage.removeItem("auth_token");
+    setAuthState(false);
+    window.location.hash = "#/welcomeSection";
+
 
     window.location.hash = "#/welcomeSection";
     currentUser = null;
@@ -81,39 +95,62 @@ function signUpbtn() {
     const password = document.getElementById("passwordInput");
     const displayLabel = document.getElementById("emailOut");
 
-    const userExists = users.some(user => user.email === email.value);
+    window.db = window.db || { accounts: [] };
+    const userExists = window.db.accounts.some(user => user.email === email.value);
     
-    if (password.value.length < 6) {
-    document.getElementById("registerFailed").innerHTML = "<strong>Password too short!</strong> Please enter at least 6 characters.";
-    document.getElementById("registerFailed").style.display = "block";
-    return;
-}
+        if (password.value.length < 6) {
+        document.getElementById("registerFailed").innerHTML = "<strong>Password too short!</strong> Please enter at least 6 characters.";
+        document.getElementById("registerFailed").style.display = "block";
+        return;
+    }
 
-// User exists check
-if (userExists) {   
-    document.getElementById("registerFailed").innerHTML = "<strong>Email already exists!</strong> Please try another...";
-    document.getElementById("registerFailed").style.display = "block";
-    cancelSignup();
-    return;
-}
+    if (userExists) {   
+        document.getElementById("registerFailed").innerHTML = "<strong>Email already exists!</strong> Please try another...";
+        document.getElementById("registerFailed").style.display = "block";
+        cancelSignup();
+        return;
+    }
 
-    document.getElementById("regiterFailed").style.display = "none";
+    document.getElementById("registerFailed").style.display = "none";
 
-     users.push({
-        firstname: firstname.value,
-        lastname: lastname.value,
-        email: email.value,
+    window.db.accounts.push({ 
+        firstname: firstname.value, 
+        lastname: lastname.value, 
+        email: email.value, 
         password: password.value,
-        isAdmin: false   
+        verified: false
     });
-    document.getElementById("registerForm").reset();
-    window.location.hash = "#/verifyEmail";
+    localStorage.setItem("accounts", JSON.stringify(window.db.accounts));
+    localStorage.setItem("unverified_email", email.value);
+
     displayLabel.textContent = email.value;
+    document.getElementById("registerForm").reset();
+
+    window.location.hash = "#/verifyEmail";
 }
 
 function cancelSignup(){
     document.getElementById("registerForm").reset();
 }
+
+document.getElementById("simulateVerificationBtn").addEventListener("click", function() {
+    const email = localStorage.getItem("unverified_email");
+    const account = window.db.accounts.find(acc => acc.email === email);
+    if (account) {
+        account.verified = true;
+        localStorage.setItem("accounts", JSON.stringify(window.db.accounts));
+        localStorage.removeItem("unverified_email");
+        window.location.hash = "#/loginSection";
+    }
+});
+
+function setAuthState(isAuth, user = null) {
+    currentUser = isAuth ? user : null;
+    document.body.classList.toggle("authenticated", isAuth);
+    document.body.classList.toggle("not-authenticated", !isAuth);
+    document.body.classList.toggle("is-admin", isAuth && user?.isAdmin);
+}
+
 
 const editProfileBtn = document.querySelector(".editProfile-btn");
 const profileName = document.getElementById("profileName");
@@ -123,7 +160,9 @@ const profileRole = document.getElementById("profileRole");
 let profileEditMode = false;
 
 editProfileBtn.addEventListener("click", function () {
-    document.getElementById("editProfile-Success").style.display = "none";
+
+    const successBox = document.getElementById("editProfile-Success");
+    successBox.style.display = "none";
 
     if (!profileEditMode) {
         profileName.innerHTML = `<input type="text" class="form-control form-control-sm" id="editName" value="${profileName.textContent}">`;
@@ -139,6 +178,8 @@ editProfileBtn.addEventListener("click", function () {
         const newName = document.getElementById("editName").value.trim();
         const newEmail = document.getElementById("editEmail").value.trim();
 
+        if (!newName || !newEmail) return;
+
         const [firstName, ...lastNameParts] = newName.split(" ");
         const lastName = lastNameParts.join(" ");
 
@@ -149,19 +190,26 @@ editProfileBtn.addEventListener("click", function () {
         currentUser.lastname = lastName;
         currentUser.email = newEmail;
 
-        const index = users.findIndex(u => u === currentUser);
+        const index = window.db.accounts.findIndex(u => u === currentUser);
         if (index !== -1) {
-            users[index] = currentUser;
+            window.db.accounts[index] = currentUser;
         }
+
+        localStorage.setItem("accounts",JSON.stringify(window.db.accounts));
         
         editProfileBtn.textContent = "Edit Profile";
         editProfileBtn.classList.remove("btn-green");
         editProfileBtn.classList.add("btn-outline-primary");
         
-        profileEditMode = false;    
+        profileEditMode = false;  
+        
+        successBox.style.display = "block";
+
+        setTimeout(() => {
+            successBox.style.display = "none";
+        }, 3000);
     }
 
-    if(profileEditMode) document.getElementById("editProfile-Success").style.display = "block";
 });
 
 
@@ -174,12 +222,12 @@ const noEmployeesRow = document.getElementById("noEmployeesRow");
 let editMode = false;
 let rowBeingEdited = null;
 
-// Show form
+// Show Emploeyee add form
 addEmployeeBtn.addEventListener("click", function () {
     employeeForm.classList.remove("d-none");
 });
 
-// Hide form
+// Hide Emploeyee add form
 cancelEmployee.addEventListener("click", function () {
     employeeForm.classList.add("d-none");
     employeeForm.reset();
