@@ -38,7 +38,6 @@ function login() {
     const userEmail = document.getElementById("loginEmail").value;
     const userPassword = document.getElementById("loginPassword").value;
     const errorMessage = document.getElementById("loginFailed");
-    const logData = document.getAnimations("loginData");
     errorMessage.style.display = "none";
 
     // const user = users.find(u => u.email === userEmail); //old
@@ -54,14 +53,9 @@ function login() {
 
     localStorage.setItem("auth_token", user.email);
     setAuthState(true, user);
-
     currentUser = user;
-
-    document.getElementById("profileName").textContent = currentUser.firstname + " " + currentUser.lastname;
-    document.getElementById("profileEmail").textContent = currentUser.email;
-    document.getElementById("profileRole").textContent = currentUser.isAdmin ? "Admin" : "User";
+    document.getElementById("loginData").reset();
     window.location.hash = "#/adminMyProfile";
-    logData.FormData.remove();
 }
 
 function logout() {
@@ -73,24 +67,29 @@ function logout() {
 
 function handleRouting() {
     const hash = window.location.hash || "#/welcomeSection";
-
     const pageId = hash.slice(2);  
     const page = document.getElementById(pageId);
-
-    document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
-    if (page) page.classList.add("active");
-
     const adminPages = ["adminMyProfile","adminEmployee","adminAccounts","adminDepartment","adminRequest"];
+    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail"];
+
     if (adminPages.includes(pageId) && (!currentUser || !currentUser.isAdmin)) {
         window.location.hash = "#/welcomeSection";
         return;
     }
-
-    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail"];
+    
     if (!currentUser && !publicPages.includes(pageId)) {
         window.location.hash = "#/welcomeSection";
         return;
     }
+
+    document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+    if (page) page.classList.add("active");
+
+    if (pageId === "adminMyProfile") renderProfile();
+
+    if (pageId === "adminAccounts") renderAccountsList();
+
+
 }
 
 function signUpbtn() {
@@ -155,29 +154,36 @@ function setAuthState(isAuth, user = null) {
     document.body.classList.toggle("is-admin", isAuth && user?.isAdmin);
 }
 
-
-const editProfileBtn = document.querySelector(".editProfile-btn");
-const profileName = document.getElementById("profileName");
-const profileEmail = document.getElementById("profileEmail");
-const profileRole = document.getElementById("profileRole");
+document.addEventListener("click", function (e) {
+    if (e.target.classList.contains("editProfile-btn")) {
+        handleEditProfile();
+    }
+});
 
 let profileEditMode = false;
 
-editProfileBtn.addEventListener("click", function () {
-
+function handleEditProfile() {
+    const editProfileBtn = document.querySelector(".editProfile-btn");
+    const profileName = document.getElementById("profileName");
+    const profileEmail = document.getElementById("profileEmail");
     const successBox = document.getElementById("editProfile-Success");
+
+    if (!editProfileBtn || !profileName || !profileEmail) return;
+
     successBox.style.display = "none";
 
     if (!profileEditMode) {
-        profileName.innerHTML = `<input type="text" class="form-control form-control-sm" id="editName" value="${profileName.textContent}">`;
-        profileEmail.innerHTML = `<input type="email" class="form-control form-control-sm" id="editEmail" value="${profileEmail.textContent}">`;
+        profileName.innerHTML =
+            `<input type="text" class="form-control form-control-sm" id="editName" value="${profileName.textContent}">`;
+
+        profileEmail.innerHTML =
+            `<input type="email" class="form-control form-control-sm" id="editEmail" value="${profileEmail.textContent}">`;
 
         editProfileBtn.textContent = "Save";
         editProfileBtn.classList.remove("btn-outline-primary");
         editProfileBtn.classList.add("btn-green");
 
         profileEditMode = true;
-
     } else {
         const newName = document.getElementById("editName").value.trim();
         const newEmail = document.getElementById("editEmail").value.trim();
@@ -187,129 +193,90 @@ editProfileBtn.addEventListener("click", function () {
         const [firstName, ...lastNameParts] = newName.split(" ");
         const lastName = lastNameParts.join(" ");
 
-        profileName.textContent = newName;
-        profileEmail.textContent = newEmail;
+        const oldEmail = currentUser.email;
 
         currentUser.firstname = firstName;
         currentUser.lastname = lastName;
         currentUser.email = newEmail;
 
-        const index = window.db.accounts.findIndex(u => u === currentUser.email);
+        profileName.textContent = newName;
+        profileEmail.textContent = newEmail;
+
+        const index = window.db.accounts.findIndex(u => u.email === oldEmail);
         if (index !== -1) {
-            window.db.accounts[index] = { ...currentUser, firstname: firstName, lastname: lastName, email: newEmail };
+            window.db.accounts[index] = { ...currentUser };
         }
 
         saveToStorage();
-        
+
         editProfileBtn.textContent = "Edit Profile";
         editProfileBtn.classList.remove("btn-green");
         editProfileBtn.classList.add("btn-outline-primary");
-        
+
         successBox.style.display = "block";
-        
-        setTimeout(() => {
-            successBox.style.display = "none";
-        }, 3000);
-        profileEditMode = false;  
+        setTimeout(() => successBox.style.display = "none", 3000);
+
+        profileEditMode = false;
+    }
+}
+
+function renderProfile() {
+    if (!currentUser) return;
+
+    const profileName = document.getElementById("profileName");
+    const profileEmail = document.getElementById("profileEmail");
+    const profileRole = document.getElementById("profileRole");
+
+    if (profileName) {
+        profileName.textContent = `${currentUser.firstname} ${currentUser.lastname}`;
     }
 
-});
+    if (profileEmail) {
+        profileEmail.textContent = currentUser.email;
+    }
 
+    if (profileRole) {
+        profileRole.textContent = currentUser.isAdmin ? "Admin" : "User";
+    }
+}
 
-// this is for EMPLOYEE CRUD yey
-const addEmployeeBtn = document.getElementById("addEmployeeBtn");
-const employeeForm = document.getElementById("employeeForm");
-const cancelEmployee = document.getElementById("cancelEmployee");
-const employeeTableBody = document.getElementById("employeeTableBody");
-const noEmployeesRow = document.getElementById("noEmployeesRow");
-let editMode = false;
-let rowBeingEdited = null;
+function renderAccountsList() {
+    const tbody = document.getElementById("accountTableBody");
+    if (!tbody) return;
 
-// Show Emploeyee add form
-addEmployeeBtn.addEventListener("click", function () {
-    employeeForm.classList.remove("d-none");
-});
+    tbody.innerHTML = "";
 
-// Hide Emploeyee add form
-cancelEmployee.addEventListener("click", function () {
-    employeeForm.classList.add("d-none");
-    employeeForm.reset();
-});
+    if (!window.db.accounts || window.db.accounts.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center">No Accounts</td>
+            </tr>
+        `;
+        return;
+    }
 
-// Handle form submit
-employeeForm.addEventListener("submit", function (e) {
-    e.preventDefault();
+    window.db.accounts.forEach(account => {
+        const tr = document.createElement("tr");
 
-    const id = document.getElementById("employeeId").value;
-    const email = document.getElementById("employeeEmail").value;
-    const position = document.getElementById("employeePosition").value;
-    const dept = document.getElementById("employeeDept").value;
+        const fullName = `${account.firstname} ${account.lastname}`;
+        const role = account.isAdmin ? "Admin" : "User";
+        const verified = account.verified
+            ? `<span class="text-success">✅</span>`
+            : `<span class="text-muted">—</span>`;
 
-    // EDIT MODE
-    if (editMode && rowBeingEdited) {
-        rowBeingEdited.children[0].textContent = id;
-        rowBeingEdited.children[1].textContent = email;
-        rowBeingEdited.children[2].textContent = position;
-        rowBeingEdited.children[3].textContent = dept;
-
-        editMode = false;
-        rowBeingEdited = null;
-    } 
-    // ADD MODE
-    else {
-        const noEmployeesRow = document.getElementById("noEmployeesRow");
-        if (noEmployeesRow) noEmployeesRow.remove();
-
-        const newRow = document.createElement("tr");
-
-        newRow.innerHTML = `
-            <td>${id}</td>
-            <td>${email}</td>
-            <td>${position}</td>
-            <td>${dept}</td>
+        tr.innerHTML = `
+            <td>${fullName}</td>
+            <td>${account.email}</td>
+            <td>${role}</td>
+            <td class="text-center">${verified}</td>
             <td>
-                <button class="btn btn-sm btn-blue edit-btn">Edit</button>
-                <button class="btn btn-sm btn-red delete-btn">Delete</button>
+                <button class="btn btn-outline-primary btn-sm edit-account" data-email="${account.email}">Edit</button>
+                <button class="btn btn-outline-warning btn-sm reset-account" data-email="${account.email}">Reset PW</button>
+                <button class="btn btn-outline-danger btn-sm delete-account" data-email="${account.email}">Delete</button>
             </td>
         `;
 
-        employeeTableBody.appendChild(newRow);
-    }
-
-    employeeForm.classList.add("d-none");
-    employeeForm.reset();
-});
-
-
-employeeTableBody.addEventListener("click", function (e) {
-
-    // DELETE
-    if (e.target.classList.contains("delete-btn")) {
-        e.target.closest("tr").remove();
-
-        if (employeeTableBody.children.length === 0) {
-            const emptyRow = document.createElement("tr");
-            emptyRow.id = "noEmployeesRow";
-            emptyRow.innerHTML = `
-                <td colspan="5" class="text-center">No employees.</td>
-            `;
-            employeeTableBody.appendChild(emptyRow);
-        }
-    }
-
-    // EDIT
-    if (e.target.classList.contains("edit-btn")) {
-        rowBeingEdited = e.target.closest("tr");
-
-        document.getElementById("employeeId").value = rowBeingEdited.children[0].textContent;
-        document.getElementById("employeeEmail").value = rowBeingEdited.children[1].textContent;
-        document.getElementById("employeePosition").value = rowBeingEdited.children[2].textContent;
-        document.getElementById("employeeDept").value = rowBeingEdited.children[3].textContent;
-
-        editMode = true;
-        employeeForm.classList.remove("d-none");
-    }
-});
-
-
+        tbody.appendChild(tr);
+    });
+}
 
