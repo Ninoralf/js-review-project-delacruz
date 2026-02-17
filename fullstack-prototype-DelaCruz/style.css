@@ -1,6 +1,5 @@
-/* All nav bar css */
 .container {
-    max-width: 600px;
+    max-width: 600;
     margin: 60px auto;
 }
 
@@ -11,16 +10,6 @@
 .page.active {
     display: block;
 }
-
-/* body.not-authenticated .role-logged-out {
-    display: block;
-} */
-
-/* body.authenticated .role-logged-in {
-.role-admin { display: none; }
-
-    display: block;
-} */
 
 .role-admin { display: none; }
 body.is-admin .role-admin { display: block; }
@@ -55,7 +44,6 @@ body.not-authenticated .role-logged-in {
     margin-bottom: 20px;
 }
 
-/* This is thedesign for default page */
 .note-box {
     background-color: #d1ecf1;
     border: 1px solid #bee5eb;
@@ -119,7 +107,6 @@ body.not-authenticated .role-logged-in {
     background-color: grey;
 }
 
-/* This is the css for registration Form */
 #registerFailed {
     display: none;
 }
@@ -161,7 +148,6 @@ body.not-authenticated .role-logged-in {
     background-color: #dde2e6;
 }
 
-/* Verify email Css */
 .verify-card {
     background: #ffffff;
     padding: 30px;
@@ -206,9 +192,6 @@ body.not-authenticated .role-logged-in {
     border-color: #1e7e34;
 }
 
-/* This is the css for login form
-* btn is copied from  default page btn
-* Copy register-title for title*/
 .login-card {
     background: #ffffff;
     padding: 30px;
@@ -220,22 +203,20 @@ body.not-authenticated .role-logged-in {
     display: none;
 }
 
-/* Overlay background */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0,0,0,0.5); /* semi-transparent dark background */
+    background-color: rgba(0,0,0,0.5); 
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 9999; /* on top of everything */
+    z-index: 9999; 
     transition: opacity 0.3s ease;
 }
 
-/* Centered modal card */
 .modal-card {
     background: #fff;
     padding: 20px;
@@ -246,9 +227,11 @@ body.not-authenticated .role-logged-in {
     animation: popIn 0.3s ease;
 }
 
-/* Pop-in animation */
 @keyframes popIn {
     from { transform: scale(0.8); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
 
+#failedMSG {
+    display: none;
+}

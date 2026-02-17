@@ -1,6 +1,7 @@
 let currentUser = null;
 const STORAGE_KEY = 'ipt_demo_v1';
 loadFromStorage();
+let editingAccountEmail = null;
 
 const token = localStorage.getItem("auth_token");
 if (token) {
@@ -9,8 +10,7 @@ if (token) {
 }
 
 window.addEventListener("hashchange", handleRouting);
-window.addEventListener("load", handleRouting); // handle initial load
-
+window.addEventListener("load", handleRouting); 
 function loadFromStorage() {
     try {
         const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
@@ -18,7 +18,6 @@ function loadFromStorage() {
 
         window.db = data;
     } catch (err) {
-        // If missing or corrupt, seed default data
         window.db = {
             accounts: [
                 { firstname: "Admin", lastname: "User", email: "admin@example.com", password: "Password123!", verified: true, isAdmin: true },
@@ -58,7 +57,6 @@ function login() {
         return;
     }
 
-
     localStorage.setItem("auth_token", user.email);
     setAuthState(true, user);
     currentUser = user;
@@ -90,7 +88,7 @@ function handleRouting() {
         return;
     }
 
-    document.querySelectorAll(".page").forEach(page => page.classList.remove("active"));
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
     if (page) page.classList.add("active");
 
     if (pageId === "adminMyProfile") renderProfile();
@@ -98,6 +96,11 @@ function handleRouting() {
     if (pageId === "adminAccounts") renderAccountsList();
 
     if (pageId === "adminRequest") renderRequests();
+
+    if(pageId === "adminEmployee") renderEmployees();
+
+    if(pageId === "adminDepartment") renderDepartments();
+
 }
 
 function signUpbtn() {
@@ -279,7 +282,7 @@ function renderAccountsList() {
             <td class="text-center">${verified}</td>
             <td>
                 <button class="btn btn-outline-primary btn-sm edit-account" data-email="${account.email}">Edit</button>
-                <button class="btn btn-outline-warning btn-sm reset-account" data-email="${account.email}">Reset PW</button>
+                <button class="btn btn-outline-warning btn-sm reset-account" data-email="${account.email}">Reset Password</button>
                 <button class="btn btn-outline-danger btn-sm delete-account" data-email="${account.email}">Delete</button>
             </td>
         `;
@@ -287,8 +290,6 @@ function renderAccountsList() {
         tbody.appendChild(tr);
     });
 }
-
-let editingAccountEmail = null;
 
 document.getElementById("addAccountBtn").addEventListener("click", () => {
     editingAccountEmail = null;
@@ -301,12 +302,18 @@ document.getElementById("addAccountBtn").addEventListener("click", () => {
 
 document.addEventListener("click", function (e) {
 
+    const deleteFailed = document.getElementById("failedMSG");
+
     if (e.target.classList.contains("delete-account")) {
 
         const emailToDelete = e.target.dataset.email;
 
         if (currentUser && currentUser.email === emailToDelete) {
-            alert("You cannot delete your own account.");
+            deleteFailed.textContent = "You cannot delete your own account!";
+            deleteFailed.style.display = "block";
+            setTimeout(() => {
+                deleteFailed.style.display = "none";
+            }, 2000);
             return;
         }
 
@@ -328,21 +335,28 @@ document.addEventListener("click", function (e) {
         const newPassword = prompt("Enter new password (min 6 characters):");
 
         if (!newPassword || newPassword.length < 6) {
-            alert("Password must be at least 6 characters.");
+            deleteFailed.textContent = "Password must be atleast 6 characters!";
+            deleteFailed.style.display = "block";
+            setTimeout(() => {
+                deleteFailed.style.display = "none";
+            }, 2000);
             return;
         }
 
         account.password = newPassword;
 
         saveToStorage();
-        alert("Password reset successfully.");
+        deleteFailed.textContent = "Password Reset Successfully";
+        deleteFailed.style.display = "block";
+        setTimeout(() => {
+            deleteFailed.style.display = "none";
+        }, 2000);
     }
 
     if (e.target.classList.contains("edit-account")) {
         const email = e.target.dataset.email;
         const account = window.db.accounts.find(acc => acc.email === email);
         if (!account) return;
-
         editingAccountEmail = email;
 
         document.getElementById("firstName").value = account.firstname;
@@ -357,81 +371,22 @@ document.addEventListener("click", function (e) {
 
 });
 
-accountForm.addEventListener("submit", (e) => {
-    e.preventDefault();
-
-    const firstname = document.getElementById("firstName").value.trim();
-    const lastname = document.getElementById("lastName").value.trim();
-    const email = document.getElementById("accountEmail").value.trim();
-    const password = document.getElementById("accountPassword").value.trim();
-    const role = document.getElementById("accountRole").value;
-    const verified = document.getElementById("isVerified").checked;
-
-    if (!firstname || !lastname || !email || !password) {
-        alert("Please fill out all required fields.");
-        return;
-    }
-
-    if (editingAccountEmail) {
-        // EDIT EXISTING ACCOUNT
-        const account = window.db.accounts.find(acc => acc.email === editingAccountEmail);
-        if (!account) return;
-
-        account.firstname = firstname;
-        account.lastname = lastname;
-        account.email = email;
-        account.password = password;
-        account.isAdmin = role.toLowerCase() === "admin";
-        account.verified = verified;
-
-        editingAccountEmail = null;
-    } else {
-        // ADD NEW ACCOUNT
-        const exists = window.db.accounts.some(acc => acc.email === email);
-        if (exists) {
-            alert("An account with this email already exists.");
-            return;
-        }
-
-        window.db.accounts.push({
-            firstname,
-            lastname,
-            email,
-            password,
-            isAdmin: role.toLowerCase() === "admin",
-            verified
-        });
-    }
-
-    saveToStorage();
-    renderAccountsList();
-
-    // CLOSE MODAL
-    accountFormModal.classList.add("d-none");
-    accountForm.reset();
-    document.getElementById("accountRole").value = "User";
-    document.getElementById("isVerified").checked = false;
-});
-
 document.addEventListener("DOMContentLoaded", () => {
     const addAccountBtn = document.getElementById("addAccountBtn"); // the button that opens the modal
     const cancelAccountBtn = document.getElementById("cancelAccount");
     const accountFormModal = document.getElementById("accountFormModal");
     const accountForm = document.getElementById("accountForm");
 
-    // Open modal
     addAccountBtn.addEventListener("click", () => {
         clearAccountForm();
         accountFormModal.classList.remove("d-none");
     });
 
-    // Close modal
     cancelAccountBtn.addEventListener("click", () => {
         accountFormModal.classList.add("d-none");
         clearAccountForm();
     });
 
-    // Click outside to close
     accountFormModal.addEventListener("click", (e) => {
         if (e.target === accountFormModal) {
             accountFormModal.classList.add("d-none");
@@ -469,7 +424,6 @@ document.getElementById("accountForm").addEventListener("submit", function (e) {
 
     const isAdmin = role.toLowerCase() === "admin";
 
-    // 🟡 EDIT MODE
     if (editingAccountEmail) {
 
         const account = window.db.accounts.find(acc => acc.email === editingAccountEmail);
@@ -482,15 +436,11 @@ document.getElementById("accountForm").addEventListener("submit", function (e) {
         account.isAdmin = isAdmin;
         account.verified = verified;
 
-        // If editing yourself, update currentUser
         if (currentUser.email === editingAccountEmail) {
             currentUser = account;
             localStorage.setItem("auth_token", account.email);
         }
-
     } else {
-        // 🟢 ADD MODE
-
         const exists = window.db.accounts.some(acc => acc.email === email);
         if (exists) {
             alert("Email already exists.");
@@ -518,7 +468,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!currentUser) return; 
     let requests = window.db.requests || [];
 
-    // Elements
     const newRequestBtnHeader = document.getElementById("newRequestBtnHeader");
     const createOneBtn = document.getElementById("createOneBtn");
     const newRequestModal = new bootstrap.Modal(document.getElementById("newRequestModal"));
@@ -529,7 +478,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const requestsTableBody = document.querySelector("#requestsTable tbody");
     const emptyRequestsState = document.getElementById("emptyRequestsState");
 
-    // Open modal buttons
     newRequestBtnHeader.addEventListener("click", () => openModal());
     createOneBtn.addEventListener("click", () => openModal());
 
@@ -538,13 +486,11 @@ document.addEventListener("DOMContentLoaded", () => {
         newRequestModal.show();
     }
 
-    // Add new item row
     addItemBtn.addEventListener("click", () => {
         const row = createItemRow();
         itemsWrapper.appendChild(row);
     });
 
-    // Create a new item row element
     function createItemRow(name = "", qty = "") {
         const div = document.createElement("div");
         div.classList.add("item-row", "d-flex", "mb-2", "align-items-center");
@@ -557,14 +503,12 @@ document.addEventListener("DOMContentLoaded", () => {
         return div;
     }
 
-    // Clear modal fields
     function clearModal() {
         document.getElementById("requestType").value = "Equipment";
         itemsWrapper.innerHTML = "";
         itemsWrapper.appendChild(createItemRow());
     }
 
-    // Submit request
     submitRequestBtn.addEventListener("click", () => {
         const type = document.getElementById("requestType").value;
         const itemRows = Array.from(itemsWrapper.querySelectorAll(".item-row"));
@@ -597,7 +541,6 @@ document.addEventListener("DOMContentLoaded", () => {
         renderRequests();
     });
 
-    // Render requests table
     function renderRequests() {
         const userRequests = requests.filter(r => r.employeeEmail === currentUser.email);
 
@@ -632,46 +575,48 @@ document.addEventListener("DOMContentLoaded", () => {
             requestsTableBody.appendChild(row);
         });
     }
-
-    // Initial render
-    renderRequests();
 });
+// renderRequests();
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Elements
+    
     const addEmployeeBtn = document.getElementById("addEmployeeBtn");
     const employeeFormModal = document.getElementById("employeeFormModal");
     const cancelEmployeeBtn = document.getElementById("cancelEmployee");
     const employeeTableBody = document.getElementById("employeeTableBody");
     const noEmployeesRow = document.getElementById("noEmployeesRow");
 
-    // Form inputs
     const employeeIdInput = document.getElementById("employeeId");
     const employeeEmailInput = document.getElementById("employeeEmail");
     const employeePositionInput = document.getElementById("employeePosition");
     const employeeDeptInput = document.getElementById("employeeDept");
     const employeeHireDateInput = document.getElementById("employeeHireDate");
 
-    // Initialize employees array in window.db if missing
     window.db.employees = window.db.employees || [];
 
-    let editingIndex = null; // null means adding new employee
+    let editingIndex = null; 
 
-    // Show form
     addEmployeeBtn.addEventListener("click", () => {
         clearForm();
         employeeFormModal.classList.remove("d-none");
         editingIndex = null;
     });
 
-    // Cancel button
     cancelEmployeeBtn.addEventListener("click", () => {
         employeeFormModal.classList.add("d-none");
         clearForm();
     });
 
-    // Submit form
-    employeeFormModal.addEventListener("submit", (e) => {
+    employeeFormModal.addEventListener("click", (e) => {
+        if (e.target === employeeFormModal) {
+            employeeFormModal.classList.add("d-none");
+            clearForm();
+        }
+    });
+
+
+    const employeeForm = document.getElementById("employeeForm");
+    employeeForm.addEventListener("submit", (e) => {
         e.preventDefault();
 
         const newEmployee = {
@@ -682,17 +627,14 @@ document.addEventListener("DOMContentLoaded", () => {
             hireDate: employeeHireDateInput.value
         };
 
-        // Basic validation
         if (!newEmployee.id || !newEmployee.email || !newEmployee.position || !newEmployee.department) {
             alert("Please fill out all required fields.");
             return;
         }
 
         if (editingIndex !== null) {
-            // Update existing employee
             window.db.employees[editingIndex] = newEmployee;
         } else {
-            // Add new employee
             window.db.employees.push(newEmployee);
         }
 
@@ -702,7 +644,6 @@ document.addEventListener("DOMContentLoaded", () => {
         clearForm();
     });
 
-    // Render employee table
     function renderEmployees() {
         employeeTableBody.innerHTML = "";
 
@@ -724,14 +665,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 </td>
             `;
 
-            // Edit button
             row.querySelector(".edit-employee").addEventListener("click", () => {
                 populateForm(emp);
                 employeeFormModal.classList.remove("d-none");
                 editingIndex = index;
             });
 
-            // Delete button
             row.querySelector(".delete-employee").addEventListener("click", () => {
                 if (confirm(`Are you sure you want to delete employee ${emp.email}?`)) {
                     window.db.employees.splice(index, 1);
@@ -744,7 +683,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
-    // Clear form fields
     function clearForm() {
         employeeIdInput.value = "";
         employeeEmailInput.value = "";
@@ -753,7 +691,6 @@ document.addEventListener("DOMContentLoaded", () => {
         employeeHireDateInput.value = "";
     }
 
-    // Populate form for editing
     function populateForm(emp) {
         employeeIdInput.value = emp.id;
         employeeEmailInput.value = emp.email;
@@ -762,6 +699,119 @@ document.addEventListener("DOMContentLoaded", () => {
         employeeHireDateInput.value = emp.hireDate;
     }
 
-    // Initial render
     renderEmployees();
+});
+
+
+if (!window.db.departments) {
+    window.db.departments = [];
+}
+
+let editingDepartmentName = null;
+
+const addDepartmentBtn = document.getElementById("addDepartmentBtn");
+const departmentModal = document.getElementById("departmentFormModal");
+const departmentForm = document.getElementById("departmentForm");
+const departmentTableBody = document.getElementById("departmentTableBody");
+const cancelDepartmentBtn = document.getElementById("cancelDepartment");
+
+addDepartmentBtn.addEventListener("click", () => {
+    editingDepartmentName = null;
+    departmentForm.reset();
+    departmentModal.classList.remove("d-none");
+});
+
+cancelDepartmentBtn.addEventListener("click", () => {
+    departmentModal.classList.add("d-none");
+});
+
+departmentModal.addEventListener("click", (e) => {
+    if (e.target === departmentModal) {
+        departmentModal.classList.add("d-none");
+    }
+});
+
+// Save Department
+departmentForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+
+    const name = document.getElementById("deptName").value.trim();
+    const description = document.getElementById("deptDescription").value.trim();
+
+    if (!name) {
+        alert("Department name required!");
+        return;
+    }
+
+    if (editingDepartmentName) {
+        const dept = window.db.departments.find(d => d.name === editingDepartmentName);
+        if (!dept) return;   
+
+        dept.name = name;
+        dept.description = description;
+    } else {    
+        window.db.departments.push({ name, description });
+    }
+
+    departmentModal.classList.add("d-none");
+    renderDepartments();
+
+    editingDepartmentName = null;
+    departmentForm.reset();
+});
+
+function renderDepartments() {
+    departmentTableBody.innerHTML = "";
+
+    if (window.db.departments.length === 0) {
+        departmentTableBody.innerHTML = `
+            <tr>
+                <td colspan="3" class="text-center">No Department</td>
+            </tr>
+        `;
+        return;
+    }
+
+    window.db.departments.forEach(dept => {
+        const row = document.createElement("tr");
+
+        row.innerHTML = `
+            <td>${dept.name}</td>
+            <td>${dept.description}</td>
+            <td>
+                <button class="btn btn-outline-primary btn-sm me-1 edit-dept" data-name="${dept.name}">Edit</button>
+                <button class="btn btn-outline-danger btn-sm delete-dept" data-name="${dept.name}">Delete</button>
+            </td>
+        `;
+
+        departmentTableBody.appendChild(row);
+    });
+}
+
+document.addEventListener("click", (e) => {
+
+    // EDIT
+    if (e.target.classList.contains("edit-dept")) {
+        const name = e.target.dataset.name;
+        const dept = window.db.departments.find(d => d.name === name);
+        if (!dept) return;
+        editingDepartmentName = name;
+
+        document.getElementById("deptName").value = dept.name;
+        document.getElementById("deptDescription").value = dept.description;
+
+        departmentModal.classList.remove("d-none");
+    }
+
+    // DELETE
+    if (e.target.classList.contains("delete-dept")) {
+        const name = e.target.dataset.name;
+
+        if (confirm("Delete this department?")) {
+            window.db.departments =
+                window.db.departments.filter(d => d.name !== name);
+
+            renderDepartments();
+        }
+    }
 });

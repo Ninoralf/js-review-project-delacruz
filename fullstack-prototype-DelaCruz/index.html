@@ -85,9 +85,9 @@
                     </div>
                     
                     <div class="mt-4">
-                        <button class="btn btn-primary">
+                        <a class="btn btn-primary" href="#/loginSection">
                             Get Started →
-                        </button>
+                        </a>
                     </div>
                 </div>
             </section>
@@ -145,7 +145,6 @@
                             Go to Login
                         </a>
                     </div>
-                    
                 </div>
             </section>
             
@@ -219,13 +218,10 @@
                     </div>
                 </div>
 
-                <br>
-
-                <!-- Employee Form Modal -->
                 <div id="employeeFormModal" class="modal-overlay d-none">
                     <div class="modal-card">
                         <div class="card-header">
-                            <span class="fw-bold">Add/Edit/Delete Employee</span>
+                            <span class="fw-bold">Add/Edit Employee</span>
                         </div>
                         <div class="card-body">
                             <form id="employeeForm">
@@ -255,7 +251,6 @@
                         </div>
                     </div>
                 </div>
-
             </section>
 
             <section id="adminAccounts" class="container is-admin page">
@@ -264,6 +259,7 @@
                         <h5>Accounts</h5>
                         <button class="btn btn-success btn-sm" id="addAccountBtn">+ Add Account</button>
                     </div>
+                    <div id="failedMSG" class="custom-failed mb-3"></div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-bordered table-striped mb-3">
@@ -286,12 +282,12 @@
                     </div>
                 </div>
 
-                <!-- Account Form Modal -->
                 <div id="accountFormModal" class="modal-overlay d-none">
                     <div class="modal-card">
                         <div class="card-header">
                             <span class="fw-bold">Add/Edit Account</span>
                         </div>
+                        
                         <div class="card-body">
                             <form id="accountForm">
                                 <div class="mb-3">
@@ -326,7 +322,6 @@
                         </div>
                     </div>
                 </div>
-
             </section>
 
             <section id="adminDepartment" class="container is-admin page">
@@ -369,22 +364,31 @@
 
                 <br>
 
-                <div class="card">
-                    <form id="departmentForm" class="border p-3 d-none">
-                        <div class="mb-2">
-                            <label for="deptName" class="form-label">Department Name</label>
-                            <input type="text" id="deptName" class="form-control" placeholder="e.g. Engineering">
+                <!-- Department Form Modal -->
+                <div id="departmentFormModal" class="modal-overlay d-none">
+                    <div class="modal-card">
+                        <div class="card-header">
+                            <span class="fw-bold">Add/Edit Department</span>
                         </div>
-                        <div class="mb-2">
-                            <label for="deptDescription" class="form-label">Description</label>
-                            <textarea id="deptDescription" class="form-control" rows="2"></textarea>
+                        <div class="card-body">
+                            <form id="departmentForm">
+                                <div class="mb-2">
+                                    <label for="deptName" class="form-label">Department Name</label>
+                                    <input type="text" id="deptName" class="form-control">
+                                </div>
+                                <div class="mb-2">
+                                    <label for="deptDescription" class="form-label">Description</label>
+                                    <textarea id="deptDescription" class="form-control" rows="2"></textarea>
+                                </div>
+                                <div class="mt-3 d-flex gap-2">
+                                    <button type="submit" class="btn btn-success btn-sm">Save</button>
+                                    <button type="button" class="btn btn-secondary btn-sm" id="cancelDepartment">Cancel</button>
+                                </div>
+                            </form>
                         </div>
-                        <div class="mt-3">
-                            <button type="submit" class="btn btn-success btn-sm">Save Department</button>
-                            <button type="button" class="btn btn-secondary btn-sm" id="cancelDepartment">Cancel</button>
-                        </div>
-                    </form>
+                    </div>
                 </div>
+
             </section>
 
             <section id="adminRequest" class="container is-admin page">
@@ -394,13 +398,11 @@
                         <button class="btn btn-success btn-sm" id="newRequestBtnHeader">+ New Request</button>
                     </div>
                     <div class="card-body">
-                        <!-- Empty state -->
                         <div id="emptyRequestsState" class="py-3">
                             <p class="text-secondary mb-3">You have no requests yet.</p>
                             <button class="btn btn-success" id="createOneBtn">Create One</button>
                         </div>
 
-                        <!-- Requests table (hidden if no requests) -->
                         <div id="requestsTableWrapper" class="table-responsive" style="display:none;">
                             <table class="table table-striped" id="requestsTable">
                                 <thead>
@@ -419,45 +421,45 @@
                         </div>
                     </div>
                 </div>
-            </section>
 
-            <!-- New Request Modal -->
-            <div class="modal fade" id="newRequestModal" tabindex="-1" aria-hidden="true">
-                <div class="modal-dialog modal-lg">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5 class="modal-title">New Request</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                        </div>
-                        <div class="modal-body">
-                            <!-- Request Type -->
-                            <div class="mb-3">
-                                <label for="requestType" class="form-label">Type</label>
-                                <select id="requestType" class="form-select">
-                                    <option value="Equipment">Equipment</option>
-                                    <option value="Leave">Leave</option>
-                                    <option value="Resources">Resources</option>
-                                </select>
+                <div class="modal fade" id="newRequestModal" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">New Request</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
-
-                            <!-- Items list -->
-                            <div id="itemsWrapper">
-                                <label class="form-label">Items</label>
-                                <div class="item-row d-flex mb-2 align-items-center">
-                                    <input type="text" class="form-control me-2 item-name" placeholder="Item name">
-                                    <input type="number" class="form-control me-2 item-qty" placeholder="Quantity" min="1">
-                                    <button type="button" class="btn btn-danger btn-sm remove-item">×</button>
+                            <div class="modal-body">
+                                <!-- Request Type -->
+                                <div class="mb-3">
+                                    <label for="requestType" class="form-label">Type</label>
+                                    <select id="requestType" class="form-select">
+                                        <option value="Equipment">Equipment</option>
+                                        <option value="Leave">Leave</option>
+                                        <option value="Resources">Resources</option>
+                                    </select>
                                 </div>
+    
+                                <!-- Items list -->
+                                <div id="itemsWrapper">
+                                    <label class="form-label">Items</label>
+                                    <div class="item-row d-flex mb-2 align-items-center">
+                                        <input type="text" class="form-control me-2 item-name" placeholder="Item name">
+                                        <input type="number" class="form-control me-2 item-qty" placeholder="Quantity" min="1">
+                                        <button type="button" class="btn btn-danger btn-sm remove-item">×</button>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-secondary btn-sm" id="addItemBtn">+ Add Item</button>
                             </div>
-                            <button type="button" class="btn btn-secondary btn-sm" id="addItemBtn">+ Add Item</button>
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="button" class="btn btn-success" id="submitRequestBtn">Submit Request</button>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="button" class="btn btn-success" id="submitRequestBtn">Submit Request</button>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+
 
 
         </main>
