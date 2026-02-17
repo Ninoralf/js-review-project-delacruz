@@ -280,3 +280,136 @@ function renderAccountsList() {
     });
 }
 
+let editingAccountEmail = null;
+
+document.getElementById("addAccountBtn").addEventListener("click", function () {
+    editingAccountEmail = null;
+    document.getElementById("accountForm").reset();
+});
+
+document.addEventListener("click", function (e) {
+
+    if (e.target.classList.contains("delete-account")) {
+
+        const emailToDelete = e.target.dataset.email;
+
+        if (currentUser && currentUser.email === emailToDelete) {
+            alert("You cannot delete your own account.");
+            return;
+        }
+
+        const confirmDelete = confirm("Are you sure you want to delete this account?");
+        if (!confirmDelete) return;
+
+        window.db.accounts = window.db.accounts.filter(acc => acc.email !== emailToDelete);
+
+        saveToStorage();
+        renderAccountsList();
+    }
+
+    if (e.target.classList.contains("reset-account")) {
+
+        const email = e.target.dataset.email;
+        const account = window.db.accounts.find(acc => acc.email === email);
+        if (!account) return;
+
+        const newPassword = prompt("Enter new password (min 6 characters):");
+
+        if (!newPassword || newPassword.length < 6) {
+            alert("Password must be at least 6 characters.");
+            return;
+        }
+
+        account.password = newPassword;
+
+        saveToStorage();
+        alert("Password reset successfully.");
+    }
+
+    if (e.target.classList.contains("edit-account")) {
+
+        const email = e.target.dataset.email;
+        const account = window.db.accounts.find(acc => acc.email === email);
+        if (!account) return;
+
+        editingAccountEmail = email;
+
+        document.getElementById("firstName").value = account.firstname;
+        document.getElementById("lastName").value = account.lastname;
+        document.getElementById("accountEmail").value = account.email;
+        document.getElementById("accountPassword").value = account.password;
+        document.getElementById("accountRole").value = account.isAdmin ? "Admin" : "User";
+        document.getElementById("isVerified").checked = account.verified;
+    }
+
+});
+
+document.getElementById("accountForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+
+    const firstName = document.getElementById("firstName").value.trim();
+    const lastName = document.getElementById("lastName").value.trim();
+    const email = document.getElementById("accountEmail").value.trim();
+    const password = document.getElementById("accountPassword").value.trim();
+    const role = document.getElementById("accountRole").value.trim();
+    const verified = document.getElementById("isVerified").checked;
+
+    if (!firstName || !lastName || !email || !password) {
+        alert("All fields are required.");
+        return;
+    }
+
+    if (password.length < 6) {
+        alert("Password must be at least 6 characters.");
+        return;
+    }
+
+    const isAdmin = role.toLowerCase() === "admin";
+
+    // 🟡 EDIT MODE
+    if (editingAccountEmail) {
+
+        const account = window.db.accounts.find(acc => acc.email === editingAccountEmail);
+        if (!account) return;
+
+        account.firstname = firstName;
+        account.lastname = lastName;
+        account.email = email;
+        account.password = password;
+        account.isAdmin = isAdmin;
+        account.verified = verified;
+
+        // If editing yourself, update currentUser
+        if (currentUser.email === editingAccountEmail) {
+            currentUser = account;
+            localStorage.setItem("auth_token", account.email);
+        }
+
+    } else {
+        // 🟢 ADD MODE
+
+        const exists = window.db.accounts.some(acc => acc.email === email);
+        if (exists) {
+            alert("Email already exists.");
+            return;
+        }
+
+        window.db.accounts.push({
+            firstname: firstName,
+            lastname: lastName,
+            email,
+            password,
+            isAdmin,
+            verified
+        });
+    }
+
+    saveToStorage();
+    renderAccountsList();
+
+    editingAccountEmail = null;
+    document.getElementById("accountForm").reset();
+});
+
+
+
