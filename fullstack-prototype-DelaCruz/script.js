@@ -23,7 +23,10 @@ function loadFromStorage() {
                 { firstname: "Admin", lastname: "User", email: "admin@example.com", password: "Password123!", verified: true, isAdmin: true },
                 { firstname: "Ninoralf", lastname: "Dela Cruz", email: "admin", password: "admin", verified: true, isAdmin: true }
             ],
-            departments: ["Engineering", "HR"]
+            departments: [
+                { name: "Engineering", description: "Software team" },
+                { name: "HR", description: "Human Resources" }
+            ]
         };
         saveToStorage();
     }
@@ -62,6 +65,7 @@ function login() {
     currentUser = user;
     document.getElementById("loginData").reset();
     window.location.hash = "#/adminMyProfile";
+    handleRouting();
 }
 
 function logout() {
@@ -75,8 +79,8 @@ function handleRouting() {
     const hash = window.location.hash || "#/welcomeSection";
     const pageId = hash.slice(2);  
     const page = document.getElementById(pageId);
-    const adminPages = ["adminMyProfile","adminEmployee","adminAccounts","adminDepartment","adminRequest"];
-    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail"];
+    const adminPages = ["adminEmployee","adminAccounts","adminDepartment"];
+    const publicPages = ["welcomeSection", "registerSection", "loginSection", "verifyEmail","adminRequest", "adminMyProfile"];
 
     if (adminPages.includes(pageId) && (!currentUser || !currentUser.isAdmin)) {
         window.location.hash = "#/welcomeSection";
@@ -219,7 +223,7 @@ function handleEditProfile() {
         }
 
         saveToStorage();
-
+        localStorage.setItem("auth_token", newEmail);
         editProfileBtn.textContent = "Edit Profile";
         editProfileBtn.classList.remove("btn-green");
         editProfileBtn.classList.add("btn-outline-primary");
@@ -465,37 +469,33 @@ document.getElementById("accountForm").addEventListener("submit", function (e) {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    if (!currentUser) return; 
-    let requests = window.db.requests || [];
+    // Don't block wiring if not logged in yet; just safely no-op later.
+    // (currentUser can be set after login without reload in your app)
+    window.db.requests = window.db.requests || [];
 
     const newRequestBtnHeader = document.getElementById("newRequestBtnHeader");
     const createOneBtn = document.getElementById("createOneBtn");
-    const newRequestModal = new bootstrap.Modal(document.getElementById("newRequestModal"));
+    const modalEl = document.getElementById("newRequestModal");
+    const newRequestModal = modalEl ? new bootstrap.Modal(modalEl) : null;
+
     const itemsWrapper = document.getElementById("itemsWrapper");
     const addItemBtn = document.getElementById("addItemBtn");
     const submitRequestBtn = document.getElementById("submitRequestBtn");
+
     const requestsTableWrapper = document.getElementById("requestsTableWrapper");
     const requestsTableBody = document.querySelector("#requestsTable tbody");
     const emptyRequestsState = document.getElementById("emptyRequestsState");
 
-    newRequestBtnHeader.addEventListener("click", () => openModal());
-    createOneBtn.addEventListener("click", () => openModal());
-
-    function openModal() {
-        clearModal();
-        newRequestModal.show();
+    if (!itemsWrapper || !addItemBtn || !submitRequestBtn || !requestsTableWrapper || !requestsTableBody || !emptyRequestsState) {
+        return; // request UI not present on this page
     }
 
-    addItemBtn.addEventListener("click", () => {
-        const row = createItemRow();
-        itemsWrapper.appendChild(row);
-    });
-
-    function createItemRow(name = "", qty = "") {
+    // ---------- Modal helpers ----------
+    function createItemRow(name = "", qty = 1) {
         const div = document.createElement("div");
         div.classList.add("item-row", "d-flex", "mb-2", "align-items-center");
         div.innerHTML = `
-            <input type="text" class="form-control me-2 item-name" placeholder="Item name" value="${name}">
+            <input type="text" class="form-control me-2 item-name" placeholder="Item name" value="${escapeHtml(name)}">
             <input type="number" class="form-control me-2 item-qty" placeholder="Quantity" min="1" value="${qty}">
             <button type="button" class="btn btn-danger btn-sm remove-item">×</button>
         `;
@@ -504,19 +504,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function clearModal() {
-        document.getElementById("requestType").value = "Equipment";
+        const typeEl = document.getElementById("requestType");
+        if (typeEl) typeEl.value = "Equipment";
         itemsWrapper.innerHTML = "";
         itemsWrapper.appendChild(createItemRow());
     }
 
+    function openModal() {
+        if (!currentUser) {
+            alert("Please login first.");
+            return;
+        }
+        clearModal();
+        newRequestModal?.show();
+    }
+
+    newRequestBtnHeader?.addEventListener("click", openModal);
+    createOneBtn?.addEventListener("click", openModal);
+
+    addItemBtn.addEventListener("click", () => {
+        itemsWrapper.appendChild(createItemRow());
+    });
+
+    // ---------- Create request ----------
     submitRequestBtn.addEventListener("click", () => {
-        const type = document.getElementById("requestType").value;
+        if (!currentUser) {
+            alert("Please login first.");
+            return;
+        }
+
+        const type = document.getElementById("requestType")?.value || "Equipment";
         const itemRows = Array.from(itemsWrapper.querySelectorAll(".item-row"));
 
         const items = itemRows
             .map(row => {
-                const name = row.querySelector(".item-name").value.trim();
-                const qty = parseInt(row.querySelector(".item-qty").value);
+                const name = row.querySelector(".item-name")?.value?.trim();
+                const qty = parseInt(row.querySelector(".item-qty")?.value, 10);
                 if (!name || !qty || qty < 1) return null;
                 return { name, qty };
             })
@@ -528,6 +551,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         const newRequest = {
+            id: (crypto?.randomUUID?.() || `req_${Date.now()}_${Math.random().toString(16).slice(2)}`),
             type,
             items,
             status: "Pending",
@@ -535,48 +559,112 @@ document.addEventListener("DOMContentLoaded", () => {
             employeeEmail: currentUser.email
         };
 
-        requests.push(newRequest);
-        localStorage.setItem("requests", JSON.stringify(requests));
-        newRequestModal.hide();
+        window.db.requests.push(newRequest);
+        saveToStorage();
+
+        newRequestModal?.hide();
         renderRequests();
     });
 
-    function renderRequests() {
-        const userRequests = requests.filter(r => r.employeeEmail === currentUser.email);
+    // ---------- Admin actions (Approve/Reject/Delete) ----------
+    document.addEventListener("click", (e) => {
+        const btn = e.target.closest("button[data-req-action][data-req-id]");
+        if (!btn) return;
 
-        if (userRequests.length === 0) {
-            emptyRequestsState.style.display = "block";
-            requestsTableWrapper.style.display = "none";
-            return;
+        if (!currentUser?.isAdmin) return; // only admin can use actions
+
+        const id = btn.dataset.reqId;
+        const action = btn.dataset.reqAction;
+
+        const req = window.db.requests.find(r => r.id === id);
+        if (!req) return;
+
+        if (action === "approve") req.status = "Approved";
+        if (action === "reject") req.status = "Rejected";
+        if (action === "delete") {
+            if (!confirm("Delete this request?")) return;
+            window.db.requests = window.db.requests.filter(r => r.id !== id);
         }
 
-        emptyRequestsState.style.display = "none";
-        requestsTableWrapper.style.display = "block";
+        saveToStorage();
+        renderRequests();
+    });
 
-        requestsTableBody.innerHTML = "";
-        userRequests.forEach(r => {
-            const itemsText = r.items.map(i => `${i.name} (${i.qty})`).join(", ");
-            const statusClass = {
-                "Pending": "bg-warning text-dark",
-                "Approved": "bg-success text-white",
-                "Rejected": "bg-danger text-white"
-            }[r.status] || "bg-secondary";
-
-            const row = document.createElement("tr");
-            row.innerHTML = `
-                <td>${new Date(r.date).toLocaleDateString()}</td>
-                <td>${r.type}</td>
-                <td>${itemsText}</td>
-                <td><span class="badge ${statusClass}">${r.status}</span></td>
-                <td>
-                    <!-- Optional: add edit/delete buttons here -->
-                </td>
-            `;
-            requestsTableBody.appendChild(row);
-        });
+    // Helper to prevent HTML injection in table and modal fields
+    function escapeHtml(str) {
+        return String(str ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
     }
+
+    // NOTE: do NOT call renderRequests() here unless your currentUser is already set at load time.
+    // Your routing can call renderRequests() when entering the request page.
 });
-// renderRequests();
+
+function renderRequests() {
+    if (!currentUser) return;
+
+    window.db.requests = window.db.requests || [];
+
+    // grab DOM elements INSIDE the function (so it's not relying on closure vars)
+    const requestsTableWrapper = document.getElementById("requestsTableWrapper");
+    const requestsTableBody = document.querySelector("#requestsTable tbody");
+    const emptyRequestsState = document.getElementById("emptyRequestsState");
+
+    if (!requestsTableWrapper || !requestsTableBody || !emptyRequestsState) return;
+
+    const escapeHtml = (str) =>
+        String(str ?? "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+
+    const visibleRequests = currentUser.isAdmin
+        ? window.db.requests
+        : window.db.requests.filter(r => r.employeeEmail === currentUser.email);
+
+    if (visibleRequests.length === 0) {
+        emptyRequestsState.style.display = "block";
+        requestsTableWrapper.style.display = "none";
+        return;
+    }
+
+    emptyRequestsState.style.display = "none";
+    requestsTableWrapper.style.display = "block";
+    requestsTableBody.innerHTML = "";
+
+    visibleRequests.forEach(r => {
+        const itemsText = (r.items || []).map(i => `${i.name} (${i.qty})`).join(", ");
+        const statusClass = {
+            Pending: "bg-warning text-dark",
+            Approved: "bg-success text-white",
+            Rejected: "bg-danger text-white"
+        }[r.status] || "bg-secondary text-white";
+
+        const actionsHtml = currentUser.isAdmin
+            ? `
+                <button class="btn btn-sm btn-success" data-req-action="approve" data-req-id="${r.id}">Approve</button>
+                <button class="btn btn-sm btn-danger" data-req-action="reject" data-req-id="${r.id}">Reject</button>
+                <button class="btn btn-sm btn-outline-secondary" data-req-action="delete" data-req-id="${r.id}">Delete</button>
+              `
+            : "";
+
+        const row = document.createElement("tr");
+        row.innerHTML = `
+            <td>${new Date(r.date).toLocaleDateString()}</td>
+            <td>${escapeHtml(r.type)}</td>
+            <td>${escapeHtml(itemsText)}</td>
+            <td><span class="badge ${statusClass}">${escapeHtml(r.status)}</span></td>
+            <td>${actionsHtml}</td>
+        `;
+        requestsTableBody.appendChild(row);
+    });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
     

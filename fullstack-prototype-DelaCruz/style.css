@@ -1,15 +1,3 @@
-.container {
-    max-width: 600;
-    margin: 60px auto;
-}
-
-.page {
-    display: none;
-}
-
-.page.active {
-    display: block;
-}
 
 .role-admin { display: none; }
 body.is-admin .role-admin { display: block; }
@@ -24,7 +12,7 @@ body.not-authenticated .role-logged-in {
 
 .navbar-brand{
     font-size: large;
-    padding: left 5rem;
+    padding-left: 5px;
 }
 
 .welcome-card {
@@ -32,6 +20,19 @@ body.not-authenticated .role-logged-in {
     padding: 35px;
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.container {
+    max-width: 750px;
+    margin: 60px auto;
+}
+
+.page {
+    display: none;
+}
+
+.page.active {
+    display: block;
 }
 
 .welcome-title {
@@ -132,11 +133,6 @@ body.not-authenticated .role-logged-in {
 .btn-success {
     background-color: #28a745;
     border-color: #28a745;
-}
-
-.btn-success:hover {
-    background-color: #218838;
-    border-color: #1e7e34;
 }
 
 .btn-cancel {
