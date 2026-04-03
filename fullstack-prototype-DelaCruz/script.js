@@ -1,4 +1,6 @@
-const STORAGE_KEY = "ipt_demo_v1";
+const API_BASE_URL = "http://localhost:3000/api";
+const AUTH_TOKEN_KEY = "auth_token";
+const PENDING_EMAIL_KEY = "pending_verification_email";
 const PUBLIC_PAGES = ["welcomeSection", "registerSection", "loginSection", "verifyEmail"];
 const AUTH_PAGES = ["adminMyProfile", "adminRequest"];
 const ADMIN_PAGES = ["adminEmployee", "adminAccounts", "adminDepartment"];
@@ -7,15 +9,19 @@ let currentUser = null;
 let editingAccountEmail = null;
 let editingDepartmentName = null;
 let profileEditMode = false;
-let editingEmployeeIndex = null;
-
+let editingEmployeeId = null;
 let requestModal = null;
+
+window.db = {
+    accounts: [],
+    departments: [],
+    requests: [],
+    employees: []
+};
 
 initializeApplication();
 
-function initializeApplication() {
-    loadFromStorage();
-    restoreSession();
+async function initializeApplication() {
     bindGlobalEvents();
     bindAuthEvents();
     bindProfileEvents();
@@ -23,72 +29,8 @@ function initializeApplication() {
     bindRequestEvents();
     bindEmployeeEvents();
     bindDepartmentEvents();
+    await restoreSession();
     handleRouting();
-}
-
-function loadFromStorage() {
-    try {
-        const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-        if (!data || !Array.isArray(data.accounts)) {
-            throw new Error("missing data");
-        }
-
-        window.db = {
-            accounts: data.accounts,
-            departments: Array.isArray(data.departments) ? data.departments : [],
-            requests: Array.isArray(data.requests) ? data.requests : [],
-            employees: Array.isArray(data.employees) ? data.employees : []
-        };
-    } catch (error) {
-        window.db = {
-            accounts: [
-                {
-                    firstname: "Admin",
-                    lastname: "User",
-                    email: "admin@example.com",
-                    password: "Password123!",
-                    verified: true,
-                    isAdmin: true
-                },
-                {
-                    firstname: "Ninoralf",
-                    lastname: "Dela Cruz",
-                    email: "admin",
-                    password: "admin",
-                    verified: true,
-                    isAdmin: true
-                }
-            ],
-            departments: [
-                { name: "Engineering", description: "Software team" },
-                { name: "HR", description: "Human Resources" }
-            ],
-            requests: [],
-            employees: []
-        };
-        saveToStorage();
-    }
-}
-
-function saveToStorage() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(window.db));
-}
-
-function restoreSession() {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-        setAuthState(false);
-        return;
-    }
-
-    const user = window.db.accounts.find(account => account.email === token);
-    if (!user) {
-        localStorage.removeItem("auth_token");
-        setAuthState(false);
-        return;
-    }
-
-    setAuthState(true, user);
 }
 
 function bindGlobalEvents() {
@@ -223,6 +165,23 @@ function bindDepartmentEvents() {
     }
 }
 
+async function restoreSession() {
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+    if (!token) {
+        setAuthState(false);
+        return;
+    }
+
+    try {
+        const response = await apiFetch("/profile");
+        setAuthState(true, mapApiUserToUiUser(response.user));
+        await refreshAppData();
+    } catch (error) {
+        sessionStorage.removeItem(AUTH_TOKEN_KEY);
+        setAuthState(false);
+    }
+}
+
 function handleRouting() {
     const hash = window.location.hash || "#/welcomeSection";
     const pageId = hash.slice(2);
@@ -269,48 +228,52 @@ function handleRouting() {
     }
 }
 
-function login() {
-    const userEmail = document.getElementById("loginEmail").value;
-    const userPassword = document.getElementById("loginPassword").value;
+async function login() {
+    const username = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
     const errorMessage = document.getElementById("loginFailed");
 
     errorMessage.style.display = "none";
 
-    const user = window.db.accounts.find(
-        account => account.email === userEmail && account.password === userPassword
-    );
+    try {
+        const response = await apiFetch("/login", {
+            method: "POST",
+            body: JSON.stringify({ username, password })
+        }, false);
 
-    if (!user) {
-        errorMessage.textContent = "Invalid email or password.";
+        sessionStorage.setItem(AUTH_TOKEN_KEY, response.token);
+        setAuthState(true, mapApiUserToUiUser(response.user));
+        document.getElementById("loginData").reset();
+        await refreshAppData();
+        window.location.hash = "#/adminMyProfile";
+        handleRouting();
+    } catch (error) {
+        errorMessage.textContent = error.message || "Invalid email or password.";
         errorMessage.style.display = "block";
         setTimeout(() => {
             errorMessage.style.display = "none";
         }, 3000);
-        return;
     }
-
-    if (!user.verified) {
-        errorMessage.textContent = "Account not verified yet";
-        errorMessage.style.display = "block";
-        localStorage.setItem("unverified_email", user.email);
-        window.location.hash = "#/verifyEmail";
-        return;
-    }
-
-    localStorage.setItem("auth_token", user.email);
-    setAuthState(true, user);
-    document.getElementById("loginData").reset();
-    window.location.hash = "#/adminMyProfile";
-    handleRouting();
 }
 
 function logout() {
-    localStorage.removeItem("auth_token");
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(PENDING_EMAIL_KEY);
+    editingAccountEmail = null;
+    editingDepartmentName = null;
+    editingEmployeeId = null;
+    profileEditMode = false;
+    window.db = {
+        accounts: [],
+        departments: [],
+        requests: [],
+        employees: []
+    };
     setAuthState(false);
     window.location.hash = "#/welcomeSection";
 }
 
-function signUpbtn() {
+async function signUpbtn() {
     const firstname = document.getElementById("firstNameInput");
     const lastname = document.getElementById("lastNameInput");
     const email = document.getElementById("emailInput");
@@ -318,55 +281,55 @@ function signUpbtn() {
     const displayLabel = document.getElementById("emailOut");
     const registerFailed = document.getElementById("registerFailed");
 
-    const userExists = window.db.accounts.some(user => user.email === email.value);
-
     if (password.value.length < 6) {
         registerFailed.innerHTML = "<strong>Password too short!</strong> Please enter at least 6 characters.";
         registerFailed.style.display = "block";
         return;
     }
 
-    if (userExists) {
-        registerFailed.innerHTML = "<strong>Email already exists!</strong> Please try another...";
-        registerFailed.style.display = "block";
-        cancelSignup();
-        return;
-    }
-
     registerFailed.style.display = "none";
 
-    window.db.accounts.push({
-        firstname: firstname.value,
-        lastname: lastname.value,
-        email: email.value,
-        password: password.value,
-        verified: false,
-        isAdmin: false
-    });
+    try {
+        await apiFetch("/register", {
+            method: "POST",
+            body: JSON.stringify({
+                firstname: firstname.value.trim(),
+                lastname: lastname.value.trim(),
+                email: email.value.trim(),
+                password: password.value
+            })
+        }, false);
 
-    saveToStorage();
-    localStorage.setItem("unverified_email", email.value);
-    document.getElementById("registerForm").reset();
-    displayLabel.textContent = email.value;
-    window.location.hash = "#/verifyEmail";
+        sessionStorage.setItem(PENDING_EMAIL_KEY, email.value.trim().toLowerCase());
+        document.getElementById("registerForm").reset();
+        displayLabel.textContent = email.value.trim();
+        window.location.hash = "#/verifyEmail";
+    } catch (error) {
+        registerFailed.innerHTML = `<strong>Registration failed!</strong> ${escapeHtml(error.message)}`;
+        registerFailed.style.display = "block";
+    }
 }
 
 function cancelSignup() {
     document.getElementById("registerForm").reset();
 }
 
-function verifyPendingAccount() {
-    const email = localStorage.getItem("unverified_email");
-    const account = window.db.accounts.find(user => user.email === email);
-
-    if (!account) {
+async function verifyPendingAccount() {
+    const email = sessionStorage.getItem(PENDING_EMAIL_KEY);
+    if (!email) {
         return;
     }
 
-    account.verified = true;
-    saveToStorage();
-    localStorage.removeItem("unverified_email");
-    window.location.hash = "#/loginSection";
+    try {
+        await apiFetch("/verify-email", {
+            method: "POST",
+            body: JSON.stringify({ email })
+        }, false);
+        sessionStorage.removeItem(PENDING_EMAIL_KEY);
+        window.location.hash = "#/loginSection";
+    } catch (error) {
+        alert(error.message || "Unable to verify account.");
+    }
 }
 
 function setAuthState(isAuthenticated, user = null) {
@@ -374,9 +337,50 @@ function setAuthState(isAuthenticated, user = null) {
     document.body.classList.toggle("authenticated", isAuthenticated);
     document.body.classList.toggle("not-authenticated", !isAuthenticated);
     document.body.classList.toggle("is-admin", Boolean(isAuthenticated && user?.isAdmin));
+
+    const userMenuLabel = document.getElementById("currentUserMenuLabel");
+    if (userMenuLabel) {
+        userMenuLabel.textContent = isAuthenticated && user
+            ? `${user.firstname || user.email}${user.isAdmin ? " (Admin)" : ""}`
+            : "Account";
+    }
 }
 
-function handleEditProfile() {
+async function refreshAppData() {
+    if (!currentUser) {
+        return;
+    }
+
+    const requestsPromise = apiFetch("/requests");
+    const departmentsPromise = apiFetch("/departments");
+
+    if (currentUser.isAdmin) {
+        const [accountsResponse, employeesResponse, departmentsResponse, requestsResponse] = await Promise.all([
+            apiFetch("/accounts"),
+            apiFetch("/employees"),
+            departmentsPromise,
+            requestsPromise
+        ]);
+
+        window.db.accounts = accountsResponse.accounts;
+        window.db.employees = employeesResponse.employees;
+        window.db.departments = departmentsResponse.departments;
+        window.db.requests = requestsResponse.requests;
+        return;
+    }
+
+    const [departmentsResponse, requestsResponse] = await Promise.all([
+        departmentsPromise,
+        requestsPromise
+    ]);
+
+    window.db.accounts = [];
+    window.db.employees = [];
+    window.db.departments = departmentsResponse.departments;
+    window.db.requests = requestsResponse.requests;
+}
+
+async function handleEditProfile() {
     const editProfileBtn = document.querySelector(".editProfile-btn");
     const profileName = document.getElementById("profileName");
     const profileEmail = document.getElementById("profileEmail");
@@ -389,9 +393,8 @@ function handleEditProfile() {
     successBox.style.display = "none";
 
     if (!profileEditMode) {
-        profileName.innerHTML = `<input type="text" class="form-control form-control-sm" id="editName" value="${escapeHtml(`${currentUser.firstname} ${currentUser.lastname}`)}">`;
+        profileName.innerHTML = `<input type="text" class="form-control form-control-sm" id="editName" value="${escapeHtml(`${currentUser.firstname} ${currentUser.lastname}`.trim())}">`;
         profileEmail.innerHTML = `<input type="email" class="form-control form-control-sm" id="editEmail" value="${escapeHtml(currentUser.email)}">`;
-
         editProfileBtn.textContent = "Save";
         editProfileBtn.classList.remove("btn-outline-primary");
         editProfileBtn.classList.add("btn-green");
@@ -400,48 +403,40 @@ function handleEditProfile() {
     }
 
     const newName = document.getElementById("editName").value.trim();
-    const newEmail = document.getElementById("editEmail").value.trim();
+    const newEmail = document.getElementById("editEmail").value.trim().toLowerCase();
 
     if (!newName || !newEmail) {
         return;
     }
 
-    const [firstName, ...lastNameParts] = newName.split(" ");
-    const lastName = lastNameParts.join(" ");
-    const oldEmail = currentUser.email;
-    const duplicateUser = window.db.accounts.find(
-        account => account.email === newEmail && account.email !== oldEmail
-    );
+    const [firstname, ...lastnameParts] = newName.split(" ");
+    const lastname = lastnameParts.join(" ") || "-";
 
-    if (duplicateUser) {
-        alert("Email already exists.");
-        return;
+    try {
+        const response = await apiFetch("/profile", {
+            method: "PUT",
+            body: JSON.stringify({
+                firstname,
+                lastname,
+                email: newEmail
+            })
+        });
+
+        currentUser = mapApiUserToUiUser(response.user);
+        renderProfile();
+        editProfileBtn.textContent = "Edit Profile";
+        editProfileBtn.classList.remove("btn-green");
+        editProfileBtn.classList.add("btn-outline-primary");
+        successBox.style.display = "block";
+        setTimeout(() => {
+            successBox.style.display = "none";
+        }, 3000);
+        profileEditMode = false;
+        setAuthState(true, currentUser);
+        await refreshAppData();
+    } catch (error) {
+        alert(error.message || "Unable to update profile.");
     }
-
-    currentUser.firstname = firstName;
-    currentUser.lastname = lastName;
-    currentUser.email = newEmail;
-
-    const index = window.db.accounts.findIndex(account => account.email === oldEmail);
-    if (index !== -1) {
-        window.db.accounts[index] = { ...currentUser };
-    }
-
-    saveToStorage();
-    localStorage.setItem("auth_token", newEmail);
-
-    profileName.textContent = newName;
-    profileEmail.textContent = newEmail;
-    editProfileBtn.textContent = "Edit Profile";
-    editProfileBtn.classList.remove("btn-green");
-    editProfileBtn.classList.add("btn-outline-primary");
-
-    successBox.style.display = "block";
-    setTimeout(() => {
-        successBox.style.display = "none";
-    }, 3000);
-
-    profileEditMode = false;
 }
 
 function renderProfile() {
@@ -454,7 +449,7 @@ function renderProfile() {
     const profileRole = document.getElementById("profileRole");
 
     if (profileName) {
-        profileName.textContent = `${currentUser.firstname} ${currentUser.lastname}`;
+        profileName.textContent = `${currentUser.firstname} ${currentUser.lastname}`.trim();
     }
 
     if (profileEmail) {
@@ -541,15 +536,16 @@ function clearAccountForm() {
     }
 }
 
-function submitAccountForm(event) {
+async function submitAccountForm(event) {
     event.preventDefault();
 
     const firstName = document.getElementById("firstName").value.trim();
     const lastName = document.getElementById("lastName").value.trim();
-    const email = document.getElementById("accountEmail").value.trim();
+    const email = document.getElementById("accountEmail").value.trim().toLowerCase();
     const password = document.getElementById("accountPassword").value.trim();
     const role = document.getElementById("accountRole").value.trim();
     const verified = document.getElementById("isVerified").checked;
+    const isAdmin = role.toLowerCase() === "admin";
 
     if (!firstName || !lastName || !email || !password) {
         alert("All fields are required.");
@@ -561,53 +557,48 @@ function submitAccountForm(event) {
         return;
     }
 
-    const isAdmin = role.toLowerCase() === "admin";
-
-    if (editingAccountEmail) {
-        const account = window.db.accounts.find(user => user.email === editingAccountEmail);
-        if (!account) {
-            return;
+    try {
+        if (editingAccountEmail) {
+            await apiFetch(`/accounts/${encodeURIComponent(editingAccountEmail)}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                    firstname: firstName,
+                    lastname: lastName,
+                    email,
+                    password,
+                    isAdmin,
+                    verified
+                })
+            });
+        } else {
+            await apiFetch("/accounts", {
+                method: "POST",
+                body: JSON.stringify({
+                    firstname: firstName,
+                    lastname: lastName,
+                    email,
+                    password,
+                    isAdmin,
+                    verified
+                })
+            });
         }
 
-        const duplicateUser = window.db.accounts.find(
-            user => user.email === email && user.email !== editingAccountEmail
-        );
-        if (duplicateUser) {
-            alert("Email already exists.");
-            return;
-        }
-
-        account.firstname = firstName;
-        account.lastname = lastName;
-        account.email = email;
-        account.password = password;
-        account.isAdmin = isAdmin;
-        account.verified = verified;
+        await refreshAppData();
 
         if (currentUser && currentUser.email === editingAccountEmail) {
-            setAuthState(true, account);
-            localStorage.setItem("auth_token", account.email);
-        }
-    } else {
-        const exists = window.db.accounts.some(user => user.email === email);
-        if (exists) {
-            alert("Email already exists.");
-            return;
+            const refreshedCurrentUser = window.db.accounts.find(account => account.email === email);
+            if (refreshedCurrentUser) {
+                currentUser = { ...refreshedCurrentUser };
+                setAuthState(true, currentUser);
+            }
         }
 
-        window.db.accounts.push({
-            firstname: firstName,
-            lastname: lastName,
-            email,
-            password,
-            isAdmin,
-            verified
-        });
+        renderAccountsList();
+        closeAccountModal();
+    } catch (error) {
+        alert(error.message || "Unable to save account.");
     }
-
-    saveToStorage();
-    renderAccountsList();
-    closeAccountModal();
 }
 
 function openAccountModalForEdit(email) {
@@ -620,7 +611,7 @@ function openAccountModalForEdit(email) {
     document.getElementById("firstName").value = account.firstname;
     document.getElementById("lastName").value = account.lastname;
     document.getElementById("accountEmail").value = account.email;
-    document.getElementById("accountPassword").value = account.password;
+    document.getElementById("accountPassword").value = "";
     document.getElementById("accountRole").value = account.isAdmin ? "Admin" : "User";
     document.getElementById("isVerified").checked = account.verified;
     document.getElementById("accountFormModal").classList.remove("d-none");
@@ -661,7 +652,7 @@ function openRequestModal() {
     requestModal?.show();
 }
 
-function submitRequest() {
+async function submitRequest() {
     if (!currentUser) {
         alert("Please login first.");
         return;
@@ -687,18 +678,17 @@ function submitRequest() {
         return;
     }
 
-    window.db.requests.push({
-        id: crypto?.randomUUID?.() || `req_${Date.now()}_${Math.random().toString(16).slice(2)}`,
-        type,
-        items,
-        status: "Pending",
-        date: new Date().toISOString(),
-        employeeEmail: currentUser.email
-    });
-
-    saveToStorage();
-    requestModal?.hide();
-    renderRequests();
+    try {
+        await apiFetch("/requests", {
+            method: "POST",
+            body: JSON.stringify({ type, items })
+        });
+        await refreshAppData();
+        requestModal?.hide();
+        renderRequests();
+    } catch (error) {
+        alert(error.message || "Unable to submit request.");
+    }
 }
 
 function renderRequests() {
@@ -714,11 +704,7 @@ function renderRequests() {
         return;
     }
 
-    const visibleRequests = currentUser.isAdmin
-        ? window.db.requests
-        : window.db.requests.filter(request => request.employeeEmail === currentUser.email);
-
-    if (visibleRequests.length === 0) {
+    if (window.db.requests.length === 0) {
         emptyRequestsState.style.display = "block";
         requestsTableWrapper.style.display = "none";
         return;
@@ -728,7 +714,7 @@ function renderRequests() {
     requestsTableWrapper.style.display = "block";
     requestsTableBody.innerHTML = "";
 
-    visibleRequests.forEach(request => {
+    window.db.requests.forEach(request => {
         const row = document.createElement("tr");
         const itemsText = (request.items || [])
             .map(item => `${item.name} (${item.qty})`)
@@ -761,7 +747,7 @@ function renderRequests() {
 }
 
 function openEmployeeModalForCreate() {
-    editingEmployeeIndex = null;
+    editingEmployeeId = null;
     clearEmployeeForm();
     const employeeFormModal = document.getElementById("employeeFormModal");
     if (employeeFormModal) {
@@ -774,7 +760,7 @@ function closeEmployeeModal() {
     if (employeeFormModal) {
         employeeFormModal.classList.add("d-none");
     }
-    editingEmployeeIndex = null;
+    editingEmployeeId = null;
     clearEmployeeForm();
 }
 
@@ -791,12 +777,12 @@ function clearEmployeeForm() {
     }
 }
 
-function submitEmployeeForm(event) {
+async function submitEmployeeForm(event) {
     event.preventDefault();
 
     const employee = {
         id: document.getElementById("employeeId").value.trim(),
-        email: document.getElementById("employeeEmail").value.trim(),
+        email: document.getElementById("employeeEmail").value.trim().toLowerCase(),
         position: document.getElementById("employeePosition").value.trim(),
         department: document.getElementById("employeeDept").value.trim(),
         hireDate: document.getElementById("employeeHireDate").value
@@ -807,15 +793,25 @@ function submitEmployeeForm(event) {
         return;
     }
 
-    if (editingEmployeeIndex !== null) {
-        window.db.employees[editingEmployeeIndex] = employee;
-    } else {
-        window.db.employees.push(employee);
-    }
+    try {
+        if (editingEmployeeId) {
+            await apiFetch(`/employees/${encodeURIComponent(editingEmployeeId)}`, {
+                method: "PUT",
+                body: JSON.stringify(employee)
+            });
+        } else {
+            await apiFetch("/employees", {
+                method: "POST",
+                body: JSON.stringify(employee)
+            });
+        }
 
-    saveToStorage();
-    renderEmployees();
-    closeEmployeeModal();
+        await refreshAppData();
+        renderEmployees();
+        closeEmployeeModal();
+    } catch (error) {
+        alert(error.message || "Unable to save employee.");
+    }
 }
 
 function renderEmployees() {
@@ -833,7 +829,7 @@ function renderEmployees() {
         return;
     }
 
-    window.db.employees.forEach((employee, index) => {
+    window.db.employees.forEach(employee => {
         const row = document.createElement("tr");
         row.innerHTML = `
             <td>${escapeHtml(employee.id)}</td>
@@ -841,21 +837,21 @@ function renderEmployees() {
             <td>${escapeHtml(employee.position)}</td>
             <td>${escapeHtml(employee.department)}</td>
             <td>
-                <button class="btn btn-sm btn-green edit-employee" data-index="${index}">Edit</button>
-                <button class="btn btn-sm btn-red delete-employee" data-index="${index}">Delete</button>
+                <button class="btn btn-sm btn-green edit-employee" data-id="${escapeHtml(employee.id)}">Edit</button>
+                <button class="btn btn-sm btn-red delete-employee" data-id="${escapeHtml(employee.id)}">Delete</button>
             </td>
         `;
         employeeTableBody.appendChild(row);
     });
 }
 
-function openEmployeeModalForEdit(index) {
-    const employee = window.db.employees[index];
+function openEmployeeModalForEdit(employeeId) {
+    const employee = window.db.employees.find(item => item.id === employeeId);
     if (!employee) {
         return;
     }
 
-    editingEmployeeIndex = index;
+    editingEmployeeId = employee.id;
     document.getElementById("employeeId").value = employee.id;
     document.getElementById("employeeEmail").value = employee.email;
     document.getElementById("employeePosition").value = employee.position;
@@ -885,7 +881,7 @@ function closeDepartmentModal() {
     }
 }
 
-function submitDepartmentForm(event) {
+async function submitDepartmentForm(event) {
     event.preventDefault();
 
     const name = document.getElementById("deptName").value.trim();
@@ -896,29 +892,27 @@ function submitDepartmentForm(event) {
         return;
     }
 
-    if (editingDepartmentName) {
-        const department = window.db.departments.find(item => item.name === editingDepartmentName);
-        if (!department) {
-            return;
+    try {
+        if (editingDepartmentName) {
+            await apiFetch(`/departments/${encodeURIComponent(editingDepartmentName)}`, {
+                method: "PUT",
+                body: JSON.stringify({ name, description })
+            });
+        } else {
+            await apiFetch("/departments", {
+                method: "POST",
+                body: JSON.stringify({ name, description })
+            });
         }
 
-        department.name = name;
-        department.description = description;
-    } else {
-        const exists = window.db.departments.some(item => item.name === name);
-        if (exists) {
-            alert("Department already exists.");
-            return;
-        }
-
-        window.db.departments.push({ name, description });
+        await refreshAppData();
+        renderDepartments();
+        editingDepartmentName = null;
+        document.getElementById("departmentForm").reset();
+        closeDepartmentModal();
+    } catch (error) {
+        alert(error.message || "Unable to save department.");
     }
-
-    saveToStorage();
-    renderDepartments();
-    editingDepartmentName = null;
-    document.getElementById("departmentForm").reset();
-    closeDepartmentModal();
 }
 
 function renderDepartments() {
@@ -988,12 +982,12 @@ function handleDocumentClick(event) {
     }
 
     if (target.classList.contains("edit-employee")) {
-        openEmployeeModalForEdit(Number.parseInt(target.dataset.index, 10));
+        openEmployeeModalForEdit(target.dataset.id);
         return;
     }
 
     if (target.classList.contains("delete-employee")) {
-        handleDeleteEmployee(Number.parseInt(target.dataset.index, 10));
+        handleDeleteEmployee(target.dataset.id);
         return;
     }
 
@@ -1013,38 +1007,34 @@ function handleDocumentClick(event) {
     }
 }
 
-function handleDeleteAccount(emailToDelete) {
+async function handleDeleteAccount(emailToDelete) {
     const feedback = document.getElementById("failedMSG");
 
-    if (currentUser && currentUser.email === emailToDelete) {
+    try {
+        if (!confirm("Are you sure you want to delete this account?")) {
+            return;
+        }
+
+        await apiFetch(`/accounts/${encodeURIComponent(emailToDelete)}`, {
+            method: "DELETE"
+        });
+        await refreshAppData();
+        renderAccountsList();
+    } catch (error) {
         if (feedback) {
-            feedback.textContent = "You cannot delete your own account!";
+            feedback.textContent = error.message || "Unable to delete account.";
             feedback.style.display = "block";
             setTimeout(() => {
                 feedback.style.display = "none";
             }, 2000);
         }
-        return;
     }
-
-    if (!confirm("Are you sure you want to delete this account?")) {
-        return;
-    }
-
-    window.db.accounts = window.db.accounts.filter(account => account.email !== emailToDelete);
-    saveToStorage();
-    renderAccountsList();
 }
 
-function handleResetAccountPassword(email) {
+async function handleResetAccountPassword(email) {
     const feedback = document.getElementById("failedMSG");
-    const account = window.db.accounts.find(user => user.email === email);
-
-    if (!account) {
-        return;
-    }
-
     const newPassword = prompt("Enter new password (min 6 characters):");
+
     if (!newPassword || newPassword.length < 6) {
         if (feedback) {
             feedback.textContent = "Password must be at least 6 characters!";
@@ -1056,70 +1046,137 @@ function handleResetAccountPassword(email) {
         return;
     }
 
-    account.password = newPassword;
-    saveToStorage();
+    try {
+        await apiFetch(`/accounts/${encodeURIComponent(email)}/password`, {
+            method: "PATCH",
+            body: JSON.stringify({ password: newPassword })
+        });
 
-    if (feedback) {
-        feedback.textContent = "Password reset successfully";
-        feedback.style.display = "block";
-        setTimeout(() => {
-            feedback.style.display = "none";
-        }, 2000);
+        if (feedback) {
+            feedback.textContent = "Password reset successfully";
+            feedback.style.display = "block";
+            setTimeout(() => {
+                feedback.style.display = "none";
+            }, 2000);
+        }
+    } catch (error) {
+        if (feedback) {
+            feedback.textContent = error.message || "Unable to reset password.";
+            feedback.style.display = "block";
+            setTimeout(() => {
+                feedback.style.display = "none";
+            }, 2000);
+        }
     }
 }
 
-function handleRequestAction(action, requestId) {
+async function handleRequestAction(action, requestId) {
     if (!currentUser?.isAdmin) {
         return;
     }
 
-    const request = window.db.requests.find(item => item.id === requestId);
-    if (!request) {
-        return;
-    }
-
-    if (action === "approve") {
-        request.status = "Approved";
-    }
-
-    if (action === "reject") {
-        request.status = "Rejected";
-    }
-
-    if (action === "delete") {
-        if (!confirm("Delete this request?")) {
-            return;
+    try {
+        if (action === "approve") {
+            await apiFetch(`/requests/${requestId}/status`, {
+                method: "PATCH",
+                body: JSON.stringify({ status: "Approved" })
+            });
         }
-        window.db.requests = window.db.requests.filter(item => item.id !== requestId);
-    }
 
-    saveToStorage();
-    renderRequests();
+        if (action === "reject") {
+            await apiFetch(`/requests/${requestId}/status`, {
+                method: "PATCH",
+                body: JSON.stringify({ status: "Rejected" })
+            });
+        }
+
+        if (action === "delete") {
+            if (!confirm("Delete this request?")) {
+                return;
+            }
+            await apiFetch(`/requests/${requestId}`, {
+                method: "DELETE"
+            });
+        }
+
+        await refreshAppData();
+        renderRequests();
+    } catch (error) {
+        alert(error.message || "Unable to update request.");
+    }
 }
 
-function handleDeleteEmployee(index) {
-    const employee = window.db.employees[index];
-    if (!employee) {
+async function handleDeleteEmployee(employeeId) {
+    if (!confirm(`Are you sure you want to delete employee ${employeeId}?`)) {
         return;
     }
 
-    if (!confirm(`Are you sure you want to delete employee ${employee.email}?`)) {
-        return;
+    try {
+        await apiFetch(`/employees/${encodeURIComponent(employeeId)}`, {
+            method: "DELETE"
+        });
+        await refreshAppData();
+        renderEmployees();
+    } catch (error) {
+        alert(error.message || "Unable to delete employee.");
     }
-
-    window.db.employees.splice(index, 1);
-    saveToStorage();
-    renderEmployees();
 }
 
-function handleDeleteDepartment(name) {
+async function handleDeleteDepartment(name) {
     if (!confirm("Delete this department?")) {
         return;
     }
 
-    window.db.departments = window.db.departments.filter(department => department.name !== name);
-    saveToStorage();
-    renderDepartments();
+    try {
+        await apiFetch(`/departments/${encodeURIComponent(name)}`, {
+            method: "DELETE"
+        });
+        await refreshAppData();
+        renderDepartments();
+    } catch (error) {
+        alert(error.message || "Unable to delete department.");
+    }
+}
+
+async function apiFetch(path, options = {}, requiresAuth = true) {
+    const headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+    };
+    const token = sessionStorage.getItem(AUTH_TOKEN_KEY);
+
+    if (requiresAuth && token) {
+        headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers
+    });
+
+    let data = {};
+    try {
+        data = await response.json();
+    } catch (error) {
+        data = {};
+    }
+
+    if (!response.ok) {
+        throw new Error(data.error || "Request failed");
+    }
+
+    return data;
+}
+
+function mapApiUserToUiUser(user) {
+    return {
+        firstname: user.firstname,
+        lastname: user.lastname,
+        email: user.email,
+        username: user.username,
+        verified: user.verified,
+        isAdmin: user.role === "admin"
+    };
 }
 
 function escapeHtml(value) {

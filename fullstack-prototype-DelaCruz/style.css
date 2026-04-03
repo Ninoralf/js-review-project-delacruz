@@ -23,7 +23,7 @@ body.not-authenticated .role-logged-in {
 }
 
 .container {
-    max-width: 750px;
+    max-width: 1000px;
     margin: 60px auto;
 }
 

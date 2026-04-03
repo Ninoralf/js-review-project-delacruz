@@ -48,14 +48,14 @@
             <nav class="navbar navbar-dark bg-dark px-4">
                 <span class="navbar-brand mb-0 h1 text-white">Full-Stack App (Ninoralf Dela Cruz)</span>
                 <div class="dropdown">
-                    <button class="btn btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                        Admin
+                    <button class="btn btn-dark dropdown-toggle" type="button" data-bs-toggle="dropdown" id="currentUserMenuLabel">
+                        Account
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end">
                         <li><a class="dropdown-item" href="#/adminMyProfile">Profile</a></li>
-                        <li><a class="dropdown-item" href="#/adminEmployee">Employees</a></li>
-                        <li><a class="dropdown-item" href="#/adminAccounts">Accounts</a></li>
-                        <li><a class="dropdown-item" href="#/adminDepartment">Departments</a></li>
+                        <li><a class="dropdown-item role-admin" href="#/adminEmployee">Employees</a></li>
+                        <li><a class="dropdown-item role-admin" href="#/adminAccounts">Accounts</a></li>
+                        <li><a class="dropdown-item role-admin" href="#/adminDepartment">Departments</a></li>
                         <li><a class="dropdown-item" href="#/adminRequest">My Requests</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item text-danger" href="#" onclick="logout()">Logout</a></li>
@@ -160,8 +160,8 @@
                     
                     <form id="loginData">
                         <div class="mb-4">
-                            <label class="form-label">Email</label>
-                            <input type="email" id="loginEmail" class="form-control" placeholder="Email">
+                            <label class="form-label">Email or Username</label>
+                            <input type="text" id="loginEmail" class="form-control" placeholder="Email or Username">
                         </div>
                         
                         <div class="mb-4">
@@ -204,7 +204,7 @@
                             <thead>
                                 <tr>
                                     <th>ID</th>
-                                    <th>Name</th>
+                                    <th>Email</th>
                                     <th>Position</th>
                                     <th>Dept</th>
                                     <th>Actions</th>
