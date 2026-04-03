@@ -60,7 +60,7 @@ npm install
 ### 3. Run the backend server
 
 ```bash
-node server.js
+npm start
 ```
 
 Server will typically run on:
@@ -84,32 +84,6 @@ http://localhost:3000
 * Users are assigned roles (e.g., Admin, User)
 * Access to certain features is restricted based on role
 * Backend handles validation and authorization
-
----
-
-## 📚 Prerequisite
-
-This project assumes completion of:
-
-> *"Full-Stack Web App: Build From Scratch Activity Guide – Implementing a Role-Based SPA Using Only Frontend Tech"*
-
----
-
-## 🛠️ Technologies Used
-
-* HTML5
-* CSS3
-* JavaScript (Vanilla)
-* Node.js
-* Express.js
-
----
-
-## 📌 Notes
-
-* Make sure Node.js is installed on your system
-* Backend must be running before frontend can interact with APIs
-* Update API endpoints in `script.js` if needed
 
 ---
 
